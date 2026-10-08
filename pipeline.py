@@ -1,35 +1,35 @@
 """
 pipeline.py
-Synapsis — the full verification pipeline.
+Synapsis — the full verification pipeline (v0.3).
 
   raw text + PMID
         ↓
-  extractor (LLM) → raw facts with quotes
+  extractor       -> raw facts with quotes
         ↓
-  claim_schema   → structured claim record
+  resolve_name    -> entity IDs + state/property qualifiers
         ↓
-  ontology       → normalized entity ids + type checks
+  quote_verifier  -> quote must exist in source
         ↓
-  quote_verifier → quote must exist in source text
+  evidence_checker-> meaning check (rules)
         ↓
-  claim_ledger   → store ONLY verified claims
-
-Nothing enters the ledger as a fact unless its quote is found in the source.
+  claim_ledger    -> dedup + store verified claims
 """
 
 from datetime import datetime, timezone
 
 from extractor import extract_facts
 from claim_schema import make_claim, CLOSED_RELATIONS
-from ontology import normalize_entity, object_type_of, is_valid_link
+from ontology import resolve_name, object_type_of, is_valid_link
 from quote_verifier import verify_quote
+from evidence_checker import meaning_check
 from claim_ledger import add_claim, load_ledger
 
 
 def _run_meta():
     return {
         "model": "openai/gpt-oss-120b",
-        "pipeline_version": "0.1",
+        "pipeline_version": "0.3",
+        "temperature": 0.1,
         "date": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }
 
@@ -37,7 +37,7 @@ def _run_meta():
 def process_abstract(abstract, pmid, verbose=True):
     if verbose:
         print("=" * 60)
-        print(f"PIPELINE  |  PMID {pmid}")
+        print(f"PIPELINE v0.3  |  PMID {pmid}")
         print("=" * 60)
 
     if verbose:
@@ -47,28 +47,45 @@ def process_abstract(abstract, pmid, verbose=True):
         print(f"    -> {len(raw_facts)} raw facts returned")
 
     claims_added = []
+    duplicates = []
     rejected = []
+    needs_review = []
 
     for i, fact in enumerate(raw_facts, 1):
         if verbose:
             print(f"\n[2.{i}] {fact.get('subject')} --{fact.get('relation')}--> {fact.get('object')}")
 
-        # Validate relation
+        # --- relation must be in the closed list ---
         if fact.get("relation") not in CLOSED_RELATIONS:
             rejected.append({**fact, "reason": "relation not in closed list"})
             if verbose:
                 print(f"      REJECTED - relation '{fact.get('relation')}' not allowed")
             continue
 
-        # Normalize entities
-        subj = normalize_entity(fact.get("subject", ""))
-        obj  = normalize_entity(fact.get("object", ""))
-        subj_type = object_type_of(subj)
-        obj_type  = object_type_of(obj)
-        if verbose:
-            print(f"      normalized: {subj} ({subj_type}) -> {obj} ({obj_type})")
+        # --- resolve subject and object ---
+        subj_r = resolve_name(fact.get("subject", ""))
+        obj_r = resolve_name(fact.get("object", ""))
 
-        # Type-check the link (only if both types are known)
+        subj = subj_r["entity_id"] or subj_r["input"]
+        obj = obj_r["entity_id"] or obj_r["input"]
+
+        subj_type = object_type_of(subj)
+        obj_type = object_type_of(obj)
+
+        if verbose:
+            s_status = "resolved" if subj_r["status"] == "resolved" else "UNRESOLVED"
+            o_status = "resolved" if obj_r["status"] == "resolved" else "UNRESOLVED"
+            print(f"      {subj} ({subj_type}, {s_status}) -> {obj} ({obj_type}, {o_status})")
+
+        # --- if either entity is unresolved, flag for review, don't store ---
+        if subj_r["status"] == "unresolved" or obj_r["status"] == "unresolved":
+            reason = f"unresolved entity: {subj if subj_r['status']=='unresolved' else obj}"
+            needs_review.append({**fact, "reason": reason})
+            if verbose:
+                print(f"      REVIEW - {reason}")
+            continue
+
+        # --- link type check (only when both types are known) ---
         if subj_type and obj_type:
             if not is_valid_link(fact["relation"], subj_type, obj_type):
                 reason = f"link type invalid: {subj_type} --{fact['relation']}--> {obj_type}"
@@ -77,12 +94,19 @@ def process_abstract(abstract, pmid, verbose=True):
                     print(f"      REJECTED - {reason}")
                 continue
 
-        # Build the claim record
+        # --- build context: fold state from subject/object into it ---
+        ctx = dict(fact.get("context", {}) or {})
+        if subj_r["state"] and "state" not in ctx:
+            ctx["state"] = subj_r["state"]
+        if obj_r["state"] and "state" not in ctx:
+            ctx["state"] = obj_r["state"]
+
+        # --- build the claim record ---
         claim = make_claim(
             subject=subj,
             relation=fact["relation"],
             object_=obj,
-            context=fact.get("context", {}),
+            context=ctx,
             source={
                 "pmid": pmid,
                 "quote": fact.get("quote", ""),
@@ -94,34 +118,59 @@ def process_abstract(abstract, pmid, verbose=True):
             run=_run_meta(),
         )
 
-        # Verify the quote
-        result = verify_quote(claim["source"]["quote"], abstract)
-        if not result["verified"]:
-            rejected.append({**fact, "reason": f"quote failed: {result['reason']}"})
+        # --- quote verification ---
+        vres = verify_quote(claim["source"]["quote"], abstract)
+        if not vres["verified"]:
+            rejected.append({**fact, "reason": f"quote failed: {vres['reason']}"})
             if verbose:
-                print(f"      REJECTED - quote check failed: {result['reason']}")
+                print(f"      REJECTED - quote check failed: {vres['reason']}")
             continue
-
-        # Passed — promote to quote_verified and store
         claim["status"] = "quote_verified"
-        stored = add_claim(claim)
-        claims_added.append(stored)
-        if verbose:
-            print(f"      STORED (id={stored['id']}, status=quote_verified)")
+
+        # --- meaning check ---
+        mres = meaning_check(claim["relation"], claim["context"], claim["source"]["quote"])
+        if mres["result"] == "fail":
+            rejected.append({**fact, "reason": f"meaning check failed: {mres['flags']}"})
+            if verbose:
+                print(f"      REJECTED - meaning check: {mres['flags']}")
+            continue
+        if mres["result"] == "review":
+            claim["status"] = "needs_review"
+            needs_review.append({**fact, "reason": f"meaning check: {mres['flags']}"})
+            if verbose:
+                print(f"      REVIEW - meaning check: {mres['flags']}")
+            # still store, but as needs_review
+        else:
+            claim["status"] = "evidence_checked"
+
+        # --- store in ledger (dedup happens inside) ---
+        result = add_claim(claim)
+        if result["action"] == "duplicate":
+            duplicates.append(result["claim"]["id"])
+            if verbose:
+                print(f"      DUPLICATE of claim #{result['claim']['id']} (extra run logged)")
+        else:
+            claims_added.append(result["claim"])
+            if verbose:
+                print(f"      STORED (id={result['claim']['id']}, status={result['claim']['status']})")
 
     summary = {
         "pmid": pmid,
         "extracted": len(raw_facts),
-        "verified": len(claims_added),
+        "created": len(claims_added),
+        "duplicates": len(duplicates),
+        "needs_review": len(needs_review),
         "rejected": len(rejected),
         "claims": claims_added,
-        "rejected_facts": rejected,
     }
 
     if verbose:
         print("\n" + "=" * 60)
         print(f"SUMMARY - extracted: {summary['extracted']}, "
-              f"verified: {summary['verified']}, rejected: {summary['rejected']}")
+              f"created: {summary['created']}, "
+              f"duplicates: {summary['duplicates']}, "
+              f"needs_review: {summary['needs_review']}, "
+              f"rejected: {summary['rejected']}")
         print("=" * 60)
 
     return summary
@@ -142,4 +191,6 @@ if __name__ == "__main__":
     ledger = load_ledger()
     print(f"  Total claims in ledger: {len(ledger['claims'])}")
     for c in ledger["claims"]:
-        print(f"  #{c['id']}: {c['subject']} --{c['relation']}--> {c['object']}  [{c['status']}]")
+        runs = len(c.get("runs", []))
+        print(f"  #{c['id']}: {c['subject']} --{c['relation']}--> {c['object']}"
+              f"  [{c['status']}]  (runs: {runs})")
