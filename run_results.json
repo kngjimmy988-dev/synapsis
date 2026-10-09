@@ -1,0 +1,939 @@
+[
+  {
+    "pmid": "33812473",
+    "extracted": 5,
+    "created": 0,
+    "duplicates": 0,
+    "needs_review": 5,
+    "rejected": 0,
+    "claims": [],
+    "elapsed_seconds": 10.0,
+    "title": "Breast cancer.",
+    "journal": "Lancet (London, England)",
+    "year": "2021"
+  },
+  {
+    "pmid": "31548545",
+    "extracted": 6,
+    "created": 0,
+    "duplicates": 0,
+    "needs_review": 5,
+    "rejected": 1,
+    "claims": [],
+    "elapsed_seconds": 5.8,
+    "title": "Breast cancer.",
+    "journal": "Nature reviews. Disease primers",
+    "year": "2019"
+  },
+  {
+    "pmid": "37044296",
+    "extracted": 7,
+    "created": 0,
+    "duplicates": 0,
+    "needs_review": 7,
+    "rejected": 0,
+    "claims": [],
+    "elapsed_seconds": 4.6,
+    "title": "Triple-negative breast cancer: epidemiology, molecular mechanisms, and modern vaccine-based treatment strategies.",
+    "journal": "Biochemical pharmacology",
+    "year": "2023"
+  },
+  {
+    "pmid": "33174058",
+    "extracted": 1,
+    "created": 0,
+    "duplicates": 0,
+    "needs_review": 1,
+    "rejected": 0,
+    "claims": [],
+    "elapsed_seconds": 2.5,
+    "title": "Triple\u2011negative breast cancer therapy: Current and future perspectives (Review).",
+    "journal": "International journal of oncology",
+    "year": "2020"
+  },
+  {
+    "pmid": "22356477",
+    "extracted": 7,
+    "created": 3,
+    "duplicates": 0,
+    "needs_review": 4,
+    "rejected": 0,
+    "claims": [
+      {
+        "subject": "BRCA1",
+        "subject_id": null,
+        "relation": "INCREASES_RISK_OF",
+        "object": "Breast_Cancer",
+        "object_id": null,
+        "sign": 1,
+        "context": {},
+        "source": {
+          "pmid": "22356477",
+          "quote": "Three groups of genetic predisposition alleles have so far been identified with high-risk genes conferring 40-85% lifetime risk including BRCA1, BRCA2 and TP53.",
+          "section": "Abstract"
+        },
+        "evidence_type": "direct",
+        "status": "evidence_checked",
+        "confidence": 0.0,
+        "run": {
+          "model": "openai/gpt-oss-120b",
+          "pipeline_version": "0.3",
+          "temperature": 0.1,
+          "date": "2026-10-09T01:39:05+00:00"
+        },
+        "id": 1,
+        "history": [
+          {
+            "status": "evidence_checked",
+            "at": "2026-10-09T01:39:05+00:00",
+            "note": "created"
+          }
+        ],
+        "runs": [
+          {
+            "at": "2026-10-09T01:39:05+00:00",
+            "run": {
+              "model": "openai/gpt-oss-120b",
+              "pipeline_version": "0.3",
+              "temperature": 0.1,
+              "date": "2026-10-09T01:39:05+00:00"
+            },
+            "quote": "Three groups of genetic predisposition alleles have so far been identified with high-risk genes conferring 40-85% lifetime risk including BRCA1, BRCA2 and TP53."
+          }
+        ]
+      },
+      {
+        "subject": "BRCA2",
+        "subject_id": null,
+        "relation": "INCREASES_RISK_OF",
+        "object": "Breast_Cancer",
+        "object_id": null,
+        "sign": 1,
+        "context": {},
+        "source": {
+          "pmid": "22356477",
+          "quote": "Three groups of genetic predisposition alleles have so far been identified with high-risk genes conferring 40-85% lifetime risk including BRCA1, BRCA2 and TP53.",
+          "section": "Abstract"
+        },
+        "evidence_type": "direct",
+        "status": "evidence_checked",
+        "confidence": 0.0,
+        "run": {
+          "model": "openai/gpt-oss-120b",
+          "pipeline_version": "0.3",
+          "temperature": 0.1,
+          "date": "2026-10-09T01:39:05+00:00"
+        },
+        "id": 2,
+        "history": [
+          {
+            "status": "evidence_checked",
+            "at": "2026-10-09T01:39:05+00:00",
+            "note": "created"
+          }
+        ],
+        "runs": [
+          {
+            "at": "2026-10-09T01:39:05+00:00",
+            "run": {
+              "model": "openai/gpt-oss-120b",
+              "pipeline_version": "0.3",
+              "temperature": 0.1,
+              "date": "2026-10-09T01:39:05+00:00"
+            },
+            "quote": "Three groups of genetic predisposition alleles have so far been identified with high-risk genes conferring 40-85% lifetime risk including BRCA1, BRCA2 and TP53."
+          }
+        ]
+      },
+      {
+        "subject": "TP53",
+        "subject_id": null,
+        "relation": "INCREASES_RISK_OF",
+        "object": "Breast_Cancer",
+        "object_id": null,
+        "sign": 1,
+        "context": {},
+        "source": {
+          "pmid": "22356477",
+          "quote": "Three groups of genetic predisposition alleles have so far been identified with high-risk genes conferring 40-85% lifetime risk including BRCA1, BRCA2 and TP53.",
+          "section": "Abstract"
+        },
+        "evidence_type": "direct",
+        "status": "evidence_checked",
+        "confidence": 0.0,
+        "run": {
+          "model": "openai/gpt-oss-120b",
+          "pipeline_version": "0.3",
+          "temperature": 0.1,
+          "date": "2026-10-09T01:39:05+00:00"
+        },
+        "id": 3,
+        "history": [
+          {
+            "status": "evidence_checked",
+            "at": "2026-10-09T01:39:05+00:00",
+            "note": "created"
+          }
+        ],
+        "runs": [
+          {
+            "at": "2026-10-09T01:39:05+00:00",
+            "run": {
+              "model": "openai/gpt-oss-120b",
+              "pipeline_version": "0.3",
+              "temperature": 0.1,
+              "date": "2026-10-09T01:39:05+00:00"
+            },
+            "quote": "Three groups of genetic predisposition alleles have so far been identified with high-risk genes conferring 40-85% lifetime risk including BRCA1, BRCA2 and TP53."
+          }
+        ]
+      }
+    ],
+    "elapsed_seconds": 4.5,
+    "title": "Familial breast cancer.",
+    "journal": "Clinical genetics",
+    "year": "2012"
+  },
+  {
+    "pmid": "28724667",
+    "extracted": 2,
+    "created": 0,
+    "duplicates": 0,
+    "needs_review": 2,
+    "rejected": 0,
+    "claims": [],
+    "elapsed_seconds": 31.0,
+    "title": "Germline Mutations in Cancer Susceptibility Genes in a Large Series of Unselected Breast Cancer Patients.",
+    "journal": "Clinical cancer research : an official journal of the American Association for Cancer Research",
+    "year": "2017"
+  },
+  {
+    "pmid": "29522266",
+    "extracted": 11,
+    "created": 1,
+    "duplicates": 0,
+    "needs_review": 11,
+    "rejected": 0,
+    "claims": [
+      {
+        "subject": "TP53",
+        "subject_id": null,
+        "relation": "INCREASES_RISK_OF",
+        "object": "Breast_Cancer",
+        "object_id": null,
+        "sign": 1,
+        "context": {
+          "species": "human",
+          "state": "germ line mutation"
+        },
+        "source": {
+          "pmid": "29522266",
+          "quote": "Using Exome Aggregation Consortium control data, we confirm significant associations of heterozygous germ line mutations with BC for ATM (OR: 3.63, 95%CI: 2.67-4.94), CDH1 (OR: 17.04, 95%CI: 3.54-82), CHEK2 (OR: 2.93, 95%CI: 2.29-3.75), PALB2 (OR: 9.53, 95%CI: 6.25-14.51), and TP53 (OR: 7.30, 95%CI: 1.22-43.68).",
+          "section": "Abstract"
+        },
+        "evidence_type": "direct",
+        "status": "needs_review",
+        "confidence": 0.0,
+        "run": {
+          "model": "openai/gpt-oss-120b",
+          "pipeline_version": "0.3",
+          "temperature": 0.1,
+          "date": "2026-10-09T01:39:50+00:00"
+        },
+        "id": 4,
+        "history": [
+          {
+            "status": "needs_review",
+            "at": "2026-10-09T01:39:50+00:00",
+            "note": "created"
+          }
+        ],
+        "runs": [
+          {
+            "at": "2026-10-09T01:39:50+00:00",
+            "run": {
+              "model": "openai/gpt-oss-120b",
+              "pipeline_version": "0.3",
+              "temperature": 0.1,
+              "date": "2026-10-09T01:39:50+00:00"
+            },
+            "quote": "Using Exome Aggregation Consortium control data, we confirm significant associations of heterozygous germ line mutations with BC for ATM (OR: 3.63, 95%CI: 2.67-4.94), CDH1 (OR: 17.04, 95%CI: 3.54-82), CHEK2 (OR: 2.93, 95%CI: 2.29-3.75), PALB2 (OR: 9.53, 95%CI: 6.25-14.51), and TP53 (OR: 7.30, 95%CI: 1.22-43.68)."
+          }
+        ]
+      }
+    ],
+    "elapsed_seconds": 7.9,
+    "title": "Gene panel testing of 5589 BRCA1/2-negative index patients with breast cancer in a routine diagnostic setting: results of the German Consortium for Hereditary Breast and Ovarian Cancer.",
+    "journal": "Cancer medicine",
+    "year": "2018"
+  },
+  {
+    "pmid": "29470806",
+    "extracted": 4,
+    "created": 0,
+    "duplicates": 0,
+    "needs_review": 4,
+    "rejected": 0,
+    "claims": [],
+    "elapsed_seconds": 29.7,
+    "title": "Screening of over 1000 Indian patients with breast and/or ovarian cancer with a multi-gene panel: prevalence of BRCA1/2 and non-BRCA mutations.",
+    "journal": "Breast cancer research and treatment",
+    "year": "2018"
+  },
+  {
+    "pmid": "8605112",
+    "extracted": 3,
+    "created": 2,
+    "duplicates": 0,
+    "needs_review": 0,
+    "rejected": 1,
+    "claims": [
+      {
+        "subject": "BRCA1",
+        "subject_id": null,
+        "relation": "INCREASES_RISK_OF",
+        "object": "Breast_Cancer",
+        "object_id": null,
+        "sign": 1,
+        "context": {
+          "species": "human"
+        },
+        "source": {
+          "pmid": "8605112",
+          "quote": "Recently, linkage analyses of large families with a predisposition to breast cancer have been performed in order to map breast cancer susceptibility genes (TP53, BRCA1, BRCA2).",
+          "section": "Abstract"
+        },
+        "evidence_type": "direct",
+        "status": "evidence_checked",
+        "confidence": 0.0,
+        "run": {
+          "model": "openai/gpt-oss-120b",
+          "pipeline_version": "0.3",
+          "temperature": 0.1,
+          "date": "2026-10-09T01:40:30+00:00"
+        },
+        "id": 5,
+        "history": [
+          {
+            "status": "evidence_checked",
+            "at": "2026-10-09T01:40:30+00:00",
+            "note": "created"
+          }
+        ],
+        "runs": [
+          {
+            "at": "2026-10-09T01:40:30+00:00",
+            "run": {
+              "model": "openai/gpt-oss-120b",
+              "pipeline_version": "0.3",
+              "temperature": 0.1,
+              "date": "2026-10-09T01:40:30+00:00"
+            },
+            "quote": "Recently, linkage analyses of large families with a predisposition to breast cancer have been performed in order to map breast cancer susceptibility genes (TP53, BRCA1, BRCA2)."
+          }
+        ]
+      },
+      {
+        "subject": "BRCA2",
+        "subject_id": null,
+        "relation": "INCREASES_RISK_OF",
+        "object": "Breast_Cancer",
+        "object_id": null,
+        "sign": 1,
+        "context": {
+          "species": "human"
+        },
+        "source": {
+          "pmid": "8605112",
+          "quote": "Recently, linkage analyses of large families with a predisposition to breast cancer have been performed in order to map breast cancer susceptibility genes (TP53, BRCA1, BRCA2).",
+          "section": "Abstract"
+        },
+        "evidence_type": "direct",
+        "status": "evidence_checked",
+        "confidence": 0.0,
+        "run": {
+          "model": "openai/gpt-oss-120b",
+          "pipeline_version": "0.3",
+          "temperature": 0.1,
+          "date": "2026-10-09T01:40:30+00:00"
+        },
+        "id": 6,
+        "history": [
+          {
+            "status": "evidence_checked",
+            "at": "2026-10-09T01:40:30+00:00",
+            "note": "created"
+          }
+        ],
+        "runs": [
+          {
+            "at": "2026-10-09T01:40:30+00:00",
+            "run": {
+              "model": "openai/gpt-oss-120b",
+              "pipeline_version": "0.3",
+              "temperature": 0.1,
+              "date": "2026-10-09T01:40:30+00:00"
+            },
+            "quote": "Recently, linkage analyses of large families with a predisposition to breast cancer have been performed in order to map breast cancer susceptibility genes (TP53, BRCA1, BRCA2)."
+          }
+        ]
+      }
+    ],
+    "elapsed_seconds": 4.6,
+    "title": "Genetic alterations in breast cancer.",
+    "journal": "Genes, chromosomes & cancer",
+    "year": "1995"
+  },
+  {
+    "pmid": "27765921",
+    "extracted": 4,
+    "created": 0,
+    "duplicates": 0,
+    "needs_review": 4,
+    "rejected": 0,
+    "claims": [],
+    "elapsed_seconds": 9.2,
+    "title": "Triple-negative breast cancer: is there a treatment on the horizon?",
+    "journal": "Oncotarget",
+    "year": "2017"
+  },
+  {
+    "pmid": "28611536",
+    "extracted": 8,
+    "created": 0,
+    "duplicates": 0,
+    "needs_review": 8,
+    "rejected": 0,
+    "claims": [],
+    "elapsed_seconds": 6.5,
+    "title": "Germline Mutations in Triple-Negative Breast Cancer.",
+    "journal": "Breast care (Basel, Switzerland)",
+    "year": "2017"
+  },
+  {
+    "pmid": "21336636",
+    "extracted": 12,
+    "created": 3,
+    "duplicates": 0,
+    "needs_review": 10,
+    "rejected": 0,
+    "claims": [
+      {
+        "subject": "BRCA1",
+        "subject_id": null,
+        "relation": "MUTATED_IN",
+        "object": "Breast_Cancer",
+        "object_id": null,
+        "sign": 0,
+        "context": {
+          "species": "human",
+          "state": "mutated"
+        },
+        "source": {
+          "pmid": "21336636",
+          "quote": "Most of these breast cancers are caused by mutations in the high penetrance genes BRCA1 and BRCA2 accounting for about 5% of all breast cancers.",
+          "section": "Abstract"
+        },
+        "evidence_type": "direct",
+        "status": "evidence_checked",
+        "confidence": 0.0,
+        "run": {
+          "model": "openai/gpt-oss-120b",
+          "pipeline_version": "0.3",
+          "temperature": 0.1,
+          "date": "2026-10-09T01:41:32+00:00"
+        },
+        "id": 7,
+        "history": [
+          {
+            "status": "evidence_checked",
+            "at": "2026-10-09T01:41:32+00:00",
+            "note": "created"
+          }
+        ],
+        "runs": [
+          {
+            "at": "2026-10-09T01:41:32+00:00",
+            "run": {
+              "model": "openai/gpt-oss-120b",
+              "pipeline_version": "0.3",
+              "temperature": 0.1,
+              "date": "2026-10-09T01:41:32+00:00"
+            },
+            "quote": "Most of these breast cancers are caused by mutations in the high penetrance genes BRCA1 and BRCA2 accounting for about 5% of all breast cancers."
+          }
+        ]
+      },
+      {
+        "subject": "BRCA2",
+        "subject_id": null,
+        "relation": "MUTATED_IN",
+        "object": "Breast_Cancer",
+        "object_id": null,
+        "sign": 0,
+        "context": {
+          "species": "human",
+          "state": "mutated"
+        },
+        "source": {
+          "pmid": "21336636",
+          "quote": "Most of these breast cancers are caused by mutations in the high penetrance genes BRCA1 and BRCA2 accounting for about 5% of all breast cancers.",
+          "section": "Abstract"
+        },
+        "evidence_type": "direct",
+        "status": "evidence_checked",
+        "confidence": 0.0,
+        "run": {
+          "model": "openai/gpt-oss-120b",
+          "pipeline_version": "0.3",
+          "temperature": 0.1,
+          "date": "2026-10-09T01:41:32+00:00"
+        },
+        "id": 8,
+        "history": [
+          {
+            "status": "evidence_checked",
+            "at": "2026-10-09T01:41:32+00:00",
+            "note": "created"
+          }
+        ],
+        "runs": [
+          {
+            "at": "2026-10-09T01:41:32+00:00",
+            "run": {
+              "model": "openai/gpt-oss-120b",
+              "pipeline_version": "0.3",
+              "temperature": 0.1,
+              "date": "2026-10-09T01:41:32+00:00"
+            },
+            "quote": "Most of these breast cancers are caused by mutations in the high penetrance genes BRCA1 and BRCA2 accounting for about 5% of all breast cancers."
+          }
+        ]
+      },
+      {
+        "subject": "TP53",
+        "subject_id": null,
+        "relation": "MUTATED_IN",
+        "object": "Breast_Cancer",
+        "object_id": null,
+        "sign": 0,
+        "context": {
+          "species": "human",
+          "state": "mutated"
+        },
+        "source": {
+          "pmid": "21336636",
+          "quote": "Other genes that include CHEK2, PTEN, TP53, ATM, STK11/LKB1, CDH1, NBS1, RAD50, BRIP1 and PALB2 have been described to be high or moderate penetrance breast cancer susceptibility genes, all contributing to the hereditary breast cancer spectrum.",
+          "section": "Abstract"
+        },
+        "evidence_type": "direct",
+        "status": "needs_review",
+        "confidence": 0.0,
+        "run": {
+          "model": "openai/gpt-oss-120b",
+          "pipeline_version": "0.3",
+          "temperature": 0.1,
+          "date": "2026-10-09T01:41:32+00:00"
+        },
+        "id": 9,
+        "history": [
+          {
+            "status": "needs_review",
+            "at": "2026-10-09T01:41:32+00:00",
+            "note": "created"
+          }
+        ],
+        "runs": [
+          {
+            "at": "2026-10-09T01:41:32+00:00",
+            "run": {
+              "model": "openai/gpt-oss-120b",
+              "pipeline_version": "0.3",
+              "temperature": 0.1,
+              "date": "2026-10-09T01:41:32+00:00"
+            },
+            "quote": "Other genes that include CHEK2, PTEN, TP53, ATM, STK11/LKB1, CDH1, NBS1, RAD50, BRIP1 and PALB2 have been described to be high or moderate penetrance breast cancer susceptibility genes, all contributing to the hereditary breast cancer spectrum."
+          }
+        ]
+      }
+    ],
+    "elapsed_seconds": 37.3,
+    "title": "Pathology of hereditary breast cancer.",
+    "journal": "Cellular oncology (Dordrecht, Netherlands)",
+    "year": "2011"
+  },
+  {
+    "pmid": "32241645",
+    "extracted": 8,
+    "created": 3,
+    "duplicates": 0,
+    "needs_review": 5,
+    "rejected": 0,
+    "claims": [
+      {
+        "subject": "BRCA1",
+        "subject_id": null,
+        "relation": "INCREASES_RISK_OF",
+        "object": "Breast_Cancer",
+        "object_id": null,
+        "sign": 1,
+        "context": {
+          "species": "human",
+          "state": "mutated"
+        },
+        "source": {
+          "pmid": "32241645",
+          "quote": "Breast cancers occurring in the context of a hereditary mutation of a predisposition gene represent 5 to 10% of all breast cancers, 20 to 25% of which being due to a mutation in the BRCA1 or BRCA2 genes.",
+          "section": "Abstract"
+        },
+        "evidence_type": "direct",
+        "status": "evidence_checked",
+        "confidence": 0.0,
+        "run": {
+          "model": "openai/gpt-oss-120b",
+          "pipeline_version": "0.3",
+          "temperature": 0.1,
+          "date": "2026-10-09T01:41:51+00:00"
+        },
+        "id": 10,
+        "history": [
+          {
+            "status": "evidence_checked",
+            "at": "2026-10-09T01:41:51+00:00",
+            "note": "created"
+          }
+        ],
+        "runs": [
+          {
+            "at": "2026-10-09T01:41:51+00:00",
+            "run": {
+              "model": "openai/gpt-oss-120b",
+              "pipeline_version": "0.3",
+              "temperature": 0.1,
+              "date": "2026-10-09T01:41:51+00:00"
+            },
+            "quote": "Breast cancers occurring in the context of a hereditary mutation of a predisposition gene represent 5 to 10% of all breast cancers, 20 to 25% of which being due to a mutation in the BRCA1 or BRCA2 genes."
+          }
+        ]
+      },
+      {
+        "subject": "BRCA2",
+        "subject_id": null,
+        "relation": "INCREASES_RISK_OF",
+        "object": "Breast_Cancer",
+        "object_id": null,
+        "sign": 1,
+        "context": {
+          "species": "human",
+          "state": "mutated"
+        },
+        "source": {
+          "pmid": "32241645",
+          "quote": "Breast cancers occurring in the context of a hereditary mutation of a predisposition gene represent 5 to 10% of all breast cancers, 20 to 25% of which being due to a mutation in the BRCA1 or BRCA2 genes.",
+          "section": "Abstract"
+        },
+        "evidence_type": "direct",
+        "status": "evidence_checked",
+        "confidence": 0.0,
+        "run": {
+          "model": "openai/gpt-oss-120b",
+          "pipeline_version": "0.3",
+          "temperature": 0.1,
+          "date": "2026-10-09T01:41:51+00:00"
+        },
+        "id": 11,
+        "history": [
+          {
+            "status": "evidence_checked",
+            "at": "2026-10-09T01:41:51+00:00",
+            "note": "created"
+          }
+        ],
+        "runs": [
+          {
+            "at": "2026-10-09T01:41:51+00:00",
+            "run": {
+              "model": "openai/gpt-oss-120b",
+              "pipeline_version": "0.3",
+              "temperature": 0.1,
+              "date": "2026-10-09T01:41:51+00:00"
+            },
+            "quote": "Breast cancers occurring in the context of a hereditary mutation of a predisposition gene represent 5 to 10% of all breast cancers, 20 to 25% of which being due to a mutation in the BRCA1 or BRCA2 genes."
+          }
+        ]
+      },
+      {
+        "subject": "TP53",
+        "subject_id": null,
+        "relation": "ASSOCIATED_WITH",
+        "object": "ERBB2",
+        "object_id": null,
+        "sign": 0,
+        "context": {
+          "species": "human",
+          "state": "mutated"
+        },
+        "source": {
+          "pmid": "32241645",
+          "quote": "Breast cancer occurring in the context of a constitutional mutation of TP53 occurs in women under 35 years old are of non-specific histological type and with an amplification of HER2 in two thirds of the cases.",
+          "section": "Abstract"
+        },
+        "evidence_type": "direct",
+        "status": "evidence_checked",
+        "confidence": 0.0,
+        "run": {
+          "model": "openai/gpt-oss-120b",
+          "pipeline_version": "0.3",
+          "temperature": 0.1,
+          "date": "2026-10-09T01:41:51+00:00"
+        },
+        "id": 12,
+        "history": [
+          {
+            "status": "evidence_checked",
+            "at": "2026-10-09T01:41:51+00:00",
+            "note": "created"
+          }
+        ],
+        "runs": [
+          {
+            "at": "2026-10-09T01:41:51+00:00",
+            "run": {
+              "model": "openai/gpt-oss-120b",
+              "pipeline_version": "0.3",
+              "temperature": 0.1,
+              "date": "2026-10-09T01:41:51+00:00"
+            },
+            "quote": "Breast cancer occurring in the context of a constitutional mutation of TP53 occurs in women under 35 years old are of non-specific histological type and with an amplification of HER2 in two thirds of the cases."
+          }
+        ]
+      }
+    ],
+    "elapsed_seconds": 15.1,
+    "title": "[Hereditary breast carcinomas pathologist's perspective].",
+    "journal": "Annales de pathologie",
+    "year": "2020"
+  },
+  {
+    "pmid": "30007403",
+    "extracted": 2,
+    "created": 0,
+    "duplicates": 0,
+    "needs_review": 2,
+    "rejected": 0,
+    "claims": [],
+    "elapsed_seconds": 12.2,
+    "title": "Therapeutic landscape in mutational triple negative breast cancer.",
+    "journal": "Molecular cancer",
+    "year": "2018"
+  },
+  {
+    "pmid": "25467110",
+    "extracted": 6,
+    "created": 1,
+    "duplicates": 0,
+    "needs_review": 6,
+    "rejected": 0,
+    "claims": [
+      {
+        "subject": "TP53",
+        "subject_id": null,
+        "relation": "INCREASES_RISK_OF",
+        "object": "Breast_Cancer",
+        "object_id": null,
+        "sign": 1,
+        "context": {
+          "species": "human",
+          "state": "germline_mutation"
+        },
+        "source": {
+          "pmid": "25467110",
+          "quote": "Consequently, new genes have emerged as breast cancer susceptibility genes, including rare germline mutations in high penetrant genes, such as TP53 and PTEN, and more frequent mutations in moderate penetrant genes, such as CHEK2, ATM and PALB2.",
+          "section": "Abstract"
+        },
+        "evidence_type": "direct",
+        "status": "needs_review",
+        "confidence": 0.0,
+        "run": {
+          "model": "openai/gpt-oss-120b",
+          "pipeline_version": "0.3",
+          "temperature": 0.1,
+          "date": "2026-10-09T01:42:12+00:00"
+        },
+        "id": 13,
+        "history": [
+          {
+            "status": "needs_review",
+            "at": "2026-10-09T01:42:13+00:00",
+            "note": "created"
+          }
+        ],
+        "runs": [
+          {
+            "at": "2026-10-09T01:42:13+00:00",
+            "run": {
+              "model": "openai/gpt-oss-120b",
+              "pipeline_version": "0.3",
+              "temperature": 0.1,
+              "date": "2026-10-09T01:42:12+00:00"
+            },
+            "quote": "Consequently, new genes have emerged as breast cancer susceptibility genes, including rare germline mutations in high penetrant genes, such as TP53 and PTEN, and more frequent mutations in moderate penetrant genes, such as CHEK2, ATM and PALB2."
+          }
+        ]
+      }
+    ],
+    "elapsed_seconds": 3.7,
+    "title": "Beyond BRCA: new hereditary breast cancer susceptibility genes.",
+    "journal": "Cancer treatment reviews",
+    "year": "2015"
+  },
+  {
+    "pmid": "29752822",
+    "extracted": 3,
+    "created": 0,
+    "duplicates": 0,
+    "needs_review": 3,
+    "rejected": 0,
+    "claims": [],
+    "elapsed_seconds": 16.4,
+    "title": "Germline mutations in 40 cancer susceptibility genes among Chinese patients with high hereditary risk breast cancer.",
+    "journal": "International journal of cancer",
+    "year": "2019"
+  },
+  {
+    "pmid": "33822253",
+    "title": "[Relevant mutations in predictive breast cancer pathology].",
+    "error": "AttributeError: 'str' object has no attribute 'get'",
+    "traceback": ""
+  },
+  {
+    "pmid": "23747889",
+    "extracted": 6,
+    "created": 0,
+    "duplicates": 0,
+    "needs_review": 6,
+    "rejected": 0,
+    "claims": [],
+    "elapsed_seconds": 33.8,
+    "title": "Breast cancer genes: beyond BRCA1 and BRCA2.",
+    "journal": "Frontiers in bioscience (Landmark edition)",
+    "year": "2013"
+  },
+  {
+    "pmid": "9274127",
+    "extracted": 4,
+    "created": 2,
+    "duplicates": 0,
+    "needs_review": 1,
+    "rejected": 1,
+    "claims": [
+      {
+        "subject": "BRCA1",
+        "subject_id": null,
+        "relation": "ASSOCIATED_WITH",
+        "object": "Breast_Cancer",
+        "object_id": null,
+        "sign": 0,
+        "context": {
+          "species": "human"
+        },
+        "source": {
+          "pmid": "9274127",
+          "quote": "More recently, two major determinants of the inherited predisposition to breast cancer, BRCA1 and BRCA2, have been isolated.",
+          "section": "Abstract"
+        },
+        "evidence_type": "direct",
+        "status": "evidence_checked",
+        "confidence": 0.0,
+        "run": {
+          "model": "openai/gpt-oss-120b",
+          "pipeline_version": "0.3",
+          "temperature": 0.1,
+          "date": "2026-10-09T01:43:27+00:00"
+        },
+        "id": 14,
+        "history": [
+          {
+            "status": "evidence_checked",
+            "at": "2026-10-09T01:43:27+00:00",
+            "note": "created"
+          }
+        ],
+        "runs": [
+          {
+            "at": "2026-10-09T01:43:27+00:00",
+            "run": {
+              "model": "openai/gpt-oss-120b",
+              "pipeline_version": "0.3",
+              "temperature": 0.1,
+              "date": "2026-10-09T01:43:27+00:00"
+            },
+            "quote": "More recently, two major determinants of the inherited predisposition to breast cancer, BRCA1 and BRCA2, have been isolated."
+          }
+        ]
+      },
+      {
+        "subject": "BRCA2",
+        "subject_id": null,
+        "relation": "ASSOCIATED_WITH",
+        "object": "Breast_Cancer",
+        "object_id": null,
+        "sign": 0,
+        "context": {
+          "species": "human"
+        },
+        "source": {
+          "pmid": "9274127",
+          "quote": "More recently, two major determinants of the inherited predisposition to breast cancer, BRCA1 and BRCA2, have been isolated.",
+          "section": "Abstract"
+        },
+        "evidence_type": "direct",
+        "status": "evidence_checked",
+        "confidence": 0.0,
+        "run": {
+          "model": "openai/gpt-oss-120b",
+          "pipeline_version": "0.3",
+          "temperature": 0.1,
+          "date": "2026-10-09T01:43:27+00:00"
+        },
+        "id": 15,
+        "history": [
+          {
+            "status": "evidence_checked",
+            "at": "2026-10-09T01:43:27+00:00",
+            "note": "created"
+          }
+        ],
+        "runs": [
+          {
+            "at": "2026-10-09T01:43:27+00:00",
+            "run": {
+              "model": "openai/gpt-oss-120b",
+              "pipeline_version": "0.3",
+              "temperature": 0.1,
+              "date": "2026-10-09T01:43:27+00:00"
+            },
+            "quote": "More recently, two major determinants of the inherited predisposition to breast cancer, BRCA1 and BRCA2, have been isolated."
+          }
+        ]
+      }
+    ],
+    "elapsed_seconds": 3.9,
+    "title": "Molecular genetics of breast cancer.",
+    "journal": "The quarterly journal of nuclear medicine : official publication of the Italian Association of Nuclear Medicine (AIMN) [and] the International Association of Radiopharmacology (IAR)",
+    "year": "1997"
+  },
+  {
+    "pmid": "27616075",
+    "extracted": 1,
+    "created": 0,
+    "duplicates": 0,
+    "needs_review": 1,
+    "rejected": 0,
+    "claims": [],
+    "elapsed_seconds": 8.9,
+    "title": "Gene panel sequencing in familial breast/ovarian cancer patients identifies multiple novel mutations also in genes others than BRCA1/2.",
+    "journal": "International journal of cancer",
+    "year": "2017"
+  }
+]

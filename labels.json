@@ -1,0 +1,122 @@
+{
+  "1": {
+    "label": "correct",
+    "subject": "BRCA1",
+    "relation": "INCREASES_RISK_OF",
+    "object": "Breast_Cancer",
+    "status": "evidence_checked",
+    "quote": "Three groups of genetic predisposition alleles have so far been identified with high-risk genes conferring 40-85% lifetime risk including BRCA1, BRCA2 and TP53."
+  },
+  "2": {
+    "label": "correct",
+    "subject": "BRCA2",
+    "relation": "INCREASES_RISK_OF",
+    "object": "Breast_Cancer",
+    "status": "evidence_checked",
+    "quote": "Three groups of genetic predisposition alleles have so far been identified with high-risk genes conferring 40-85% lifetime risk including BRCA1, BRCA2 and TP53."
+  },
+  "3": {
+    "label": "correct",
+    "subject": "TP53",
+    "relation": "INCREASES_RISK_OF",
+    "object": "Breast_Cancer",
+    "status": "evidence_checked",
+    "quote": "Three groups of genetic predisposition alleles have so far been identified with high-risk genes conferring 40-85% lifetime risk including BRCA1, BRCA2 and TP53."
+  },
+  "4": {
+    "label": "correct",
+    "subject": "TP53",
+    "relation": "INCREASES_RISK_OF",
+    "object": "Breast_Cancer",
+    "status": "needs_review",
+    "quote": "Using Exome Aggregation Consortium control data, we confirm significant associations of heterozygous germ line mutations with BC for ATM (OR: 3.63, 95%CI: 2.67-4.94), CDH1 (OR: 17.04, 95%CI: 3.54-82), CHEK2 (OR: 2.93, 95%CI: 2.29-3.75), PALB2 (OR: 9.53, 95%CI: 6.25-14.51), and TP53 (OR: 7.30, 95%CI: 1.22-43.68)."
+  },
+  "5": {
+    "label": "partly",
+    "subject": "BRCA1",
+    "relation": "INCREASES_RISK_OF",
+    "object": "Breast_Cancer",
+    "status": "evidence_checked",
+    "quote": "Recently, linkage analyses of large families with a predisposition to breast cancer have been performed in order to map breast cancer susceptibility genes (TP53, BRCA1, BRCA2)."
+  },
+  "6": {
+    "label": "partly",
+    "subject": "BRCA2",
+    "relation": "INCREASES_RISK_OF",
+    "object": "Breast_Cancer",
+    "status": "evidence_checked",
+    "quote": "Recently, linkage analyses of large families with a predisposition to breast cancer have been performed in order to map breast cancer susceptibility genes (TP53, BRCA1, BRCA2)."
+  },
+  "7": {
+    "label": "correct",
+    "subject": "BRCA1",
+    "relation": "MUTATED_IN",
+    "object": "Breast_Cancer",
+    "status": "evidence_checked",
+    "quote": "Most of these breast cancers are caused by mutations in the high penetrance genes BRCA1 and BRCA2 accounting for about 5% of all breast cancers."
+  },
+  "8": {
+    "label": "correct",
+    "subject": "BRCA2",
+    "relation": "MUTATED_IN",
+    "object": "Breast_Cancer",
+    "status": "evidence_checked",
+    "quote": "Most of these breast cancers are caused by mutations in the high penetrance genes BRCA1 and BRCA2 accounting for about 5% of all breast cancers."
+  },
+  "9": {
+    "label": "wrong",
+    "subject": "TP53",
+    "relation": "MUTATED_IN",
+    "object": "Breast_Cancer",
+    "status": "needs_review",
+    "quote": "Other genes that include CHEK2, PTEN, TP53, ATM, STK11/LKB1, CDH1, NBS1, RAD50, BRIP1 and PALB2 have been described to be high or moderate penetrance breast cancer susceptibility genes, all contributing to the hereditary breast cancer spectrum."
+  },
+  "10": {
+    "label": "correct",
+    "subject": "BRCA1",
+    "relation": "INCREASES_RISK_OF",
+    "object": "Breast_Cancer",
+    "status": "evidence_checked",
+    "quote": "Breast cancers occurring in the context of a hereditary mutation of a predisposition gene represent 5 to 10% of all breast cancers, 20 to 25% of which being due to a mutation in the BRCA1 or BRCA2 genes."
+  },
+  "11": {
+    "label": "correct",
+    "subject": "BRCA2",
+    "relation": "INCREASES_RISK_OF",
+    "object": "Breast_Cancer",
+    "status": "evidence_checked",
+    "quote": "Breast cancers occurring in the context of a hereditary mutation of a predisposition gene represent 5 to 10% of all breast cancers, 20 to 25% of which being due to a mutation in the BRCA1 or BRCA2 genes."
+  },
+  "12": {
+    "label": "partly",
+    "subject": "TP53",
+    "relation": "ASSOCIATED_WITH",
+    "object": "ERBB2",
+    "status": "evidence_checked",
+    "quote": "Breast cancer occurring in the context of a constitutional mutation of TP53 occurs in women under 35 years old are of non-specific histological type and with an amplification of HER2 in two thirds of the cases."
+  },
+  "13": {
+    "label": "partly",
+    "subject": "TP53",
+    "relation": "INCREASES_RISK_OF",
+    "object": "Breast_Cancer",
+    "status": "needs_review",
+    "quote": "Consequently, new genes have emerged as breast cancer susceptibility genes, including rare germline mutations in high penetrant genes, such as TP53 and PTEN, and more frequent mutations in moderate penetrant genes, such as CHEK2, ATM and PALB2."
+  },
+  "14": {
+    "label": "correct",
+    "subject": "BRCA1",
+    "relation": "ASSOCIATED_WITH",
+    "object": "Breast_Cancer",
+    "status": "evidence_checked",
+    "quote": "More recently, two major determinants of the inherited predisposition to breast cancer, BRCA1 and BRCA2, have been isolated."
+  },
+  "15": {
+    "label": "correct",
+    "subject": "BRCA2",
+    "relation": "ASSOCIATED_WITH",
+    "object": "Breast_Cancer",
+    "status": "evidence_checked",
+    "quote": "More recently, two major determinants of the inherited predisposition to breast cancer, BRCA1 and BRCA2, have been isolated."
+  }
+}

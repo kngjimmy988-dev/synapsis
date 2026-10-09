@@ -23,6 +23,7 @@ STATUS_LEVELS = [
     "extracted",
     "quote_verified",
     "evidence_checked",
+    "needs_review",
     "verified",
     "contradicted",
 ]
@@ -38,17 +39,27 @@ def make_claim(subject, relation, object_,
         raise ValueError(f"Status '{status}' invalid.")
     if sign is None:
         sign = CLOSED_RELATIONS[relation][0]
+
+    # Coerce context and source to dicts — protects against LLM output
+    # that returns a string where a dict is expected.
+    if not isinstance(context, dict):
+        context = {}
+    if not isinstance(source, dict):
+        source = {}
+    if not isinstance(run, dict):
+        run = {}
+
     return {
         "subject": subject, "subject_id": subject_id,
         "relation": relation,
         "object": object_, "object_id": object_id,
         "sign": sign,
-        "context": context or {},
-        "source": source or {},
+        "context": context,
+        "source": source,
         "evidence_type": evidence_type,
         "status": status,
         "confidence": confidence,
-        "run": run or {},
+        "run": run,
     }
 
 
@@ -69,3 +80,4 @@ if __name__ == "__main__":
     print(json.dumps(c, indent=2))
     print("\nChainable?", is_chainable(c))
     print("Relations:", len(CLOSED_RELATIONS))
+
