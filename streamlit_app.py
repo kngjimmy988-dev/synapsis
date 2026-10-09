@@ -1,6 +1,6 @@
 """
 streamlit_app.py
-Synapsis — public web demo (v2 landing).
+Synapsis — public web demo (v3).
 """
 
 import streamlit as st
@@ -13,8 +13,6 @@ st.set_page_config(
 
 # ────────────────────────────────────────────────────────────
 # PRE-LOADED EXAMPLES
-# The topic is secondary. What matters is: does the quote
-# support the claim, or not?
 # ────────────────────────────────────────────────────────────
 EXAMPLES = [
     {
@@ -87,7 +85,7 @@ EXAMPLES = [
 ]
 
 # ────────────────────────────────────────────────────────────
-# HEADER + WHAT THIS DOES
+# HEADER
 # ────────────────────────────────────────────────────────────
 st.title("🔬 Synapsis")
 st.markdown(
@@ -98,15 +96,19 @@ st.markdown(
 st.divider()
 
 # ────────────────────────────────────────────────────────────
-# HOW TO READ THE OUTPUT
+# HOW TO READ
 # ────────────────────────────────────────────────────────────
 with st.expander("How to read the results  👇", expanded=True):
     st.markdown(
         "- ✅ **evidence_checked** — the quote fully supports the claim\n"
-        "- ⚠️ **needs_review** — the quote is weaker than the claim, or context is missing\n"
+        "- ⚠️ **needs_review** — the quote is weaker than the claim, context is "
+        "missing, or the entities aren't in our ontology yet\n"
         "- ❌ **rejected** — the quote does not support the claim\n\n"
         "Every claim is tied to a real quote from a real paper. "
-        "Nothing is trusted until it's checked."
+        "Nothing is trusted until it's checked.\n\n"
+        "**Note:** the current ontology only covers breast cancer genes. "
+        "Anything outside that scope goes to `needs_review` — that's the "
+        "system being honest, not guessing."
     )
 st.divider()
 
@@ -133,9 +135,7 @@ for c in example["claims"]:
     else:
         icon = "❌"
 
-    st.markdown(
-        f"{icon}  `{c['subject']}`  —**{c['relation']}**→  `{c['object']}`"
-    )
+    st.markdown(f"{icon}  `{c['subject']}`  —**{c['relation']}**→  `{c['object']}`")
     st.caption(f"Quote: *“{c['quote']}”*")
     if c["flag"]:
         st.warning(f"Flag: `{c['flag']}`")
@@ -199,6 +199,15 @@ if st.session_state.user_results:
             f"created {r['created']}, review {r['needs_review']}, "
             f"rejected {r['rejected']}"
         )
+        if r["created"] == 0 and r["needs_review"] > 0:
+            st.info(
+                "All claims went to `needs_review`. This usually means the "
+                "entities in your abstract aren't in our current ontology "
+                "(which is scoped to breast cancer genes). The pipeline "
+                "extracted the claims correctly — it just refuses to mark "
+                "them verified without recognizing the entities. "
+                "That's the system being honest."
+            )
 
 # ────────────────────────────────────────────────────────────
 # FOOTER
