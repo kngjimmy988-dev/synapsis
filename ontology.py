@@ -1,7 +1,8 @@
 """
 ontology.py
-Synapsis — Layer 1: the ontology (shared knowledge map).
-First pack: biomedicine (HER2 / BRCA breast cancer).
+Synapsis — Layer 1: the ontology.
+Seed list for the first pack (breast cancer).
+Falls back to entity_resolver for entities outside the seed list.
 """
 
 OBJECT_TYPES = {
@@ -14,6 +15,8 @@ OBJECT_TYPES = {
     "TISSUE": "A tissue context",
     "STUDY": "A publication, trial, or dataset",
     "BIOMARKER": "A measurable indicator",
+    "COMPOUND": "A chemical compound",
+    "ORGANISM": "An organism",
 }
 
 LINK_TYPES = {
@@ -26,6 +29,7 @@ LINK_TYPES = {
     "PART_OF_PATHWAY":          ("PROTEIN", "PATHWAY"),
     "MUTATED_IN":               ("GENE", "DISEASE"),
     "INCREASES_RISK_OF":        ("GENE", "DISEASE"),
+    "DECREASES_RISK_OF":        ("GENE", "DISEASE"),
     "BIOMARKER_OF":             ("BIOMARKER", "DISEASE"),
     "REQUIRED_FOR":             ("PROTEIN", "PATHWAY"),
     "TARGETS":                  ("DRUG", "PROTEIN"),
@@ -73,7 +77,6 @@ PROPERTY_WORDS = {
 
 
 def _key(text):
-    """Normalize a name for lookup: lowercase, underscores/spaces -> single space."""
     return " ".join(text.lower().replace("_", " ").split())
 
 
@@ -89,26 +92,34 @@ def _lookup(candidate):
     return None
 
 
-def resolve_name(name):
+def resolve_name(name, use_external=True):
     """
-    Split a raw extracted name into entity + qualifiers.
-    Returns: {"input", "entity_id", "status", "state", "property"}
+    Split a raw name into entity + state/property qualifiers.
+
+    Order:
+      1. Whole-name lookup in seed list
+      2. Split into core + qualifiers, lookup core in seed
+      3. Fall back to entity_resolver (external databases)
+
+    Returns dict with: input, entity_id, status, state, property, source, reason
     """
-    clean = name.replace("_", " ").strip()
+    clean = (name or "").replace("_", " ").strip()
     out = {"input": name, "entity_id": None, "status": "unresolved",
-           "state": None, "property": None}
+           "state": None, "property": None, "source": None, "reason": None}
 
     if not clean:
+        out["reason"] = "empty_name"
         return out
 
-    # Whole-name lookup first
+    # 1) Whole-name seed lookup
     hit = _lookup(clean)
     if hit:
         out["entity_id"] = hit
         out["status"] = "resolved"
+        out["source"] = "seed"
         return out
 
-    # Otherwise, split into core + state words + property words
+    # 2) Split into core + state/property words
     core, props = [], []
     for tok in clean.split():
         low = tok.lower()
@@ -124,26 +135,58 @@ def resolve_name(name):
     if props:
         out["property"] = " ".join(props)
 
-    core_name = " ".join(core)
+    core_name = " ".join(core).strip()
+
+    # 3) Seed lookup on core
     hit = _lookup(core_name)
     if hit:
         out["entity_id"] = hit
         out["status"] = "resolved"
+        out["source"] = "seed"
+        return out
+
+    # 4) External fallback
+    if use_external and core_name:
+        try:
+            from entity_resolver import resolve as external_resolve
+            ext = external_resolve(core_name, seed_lookup=None, use_external=True)
+            if ext and ext.get("status") in ("resolved", "seed"):
+                out["entity_id"] = ext.get("entity_id")
+                out["status"] = "resolved"
+                out["source"] = ext.get("source")
+                return out
+            out["reason"] = (ext or {}).get("reason") or "external_returned_none"
+        except Exception as e:
+            out["reason"] = f"resolver_error:{type(e).__name__}"
 
     return out
 
 
 def normalize_entity(name):
-    """Return the canonical id if resolvable, else the name itself."""
     r = resolve_name(name)
     return r["entity_id"] if r["status"] == "resolved" else name
 
 
 def object_type_of(name):
+    """
+    Return the type of an entity. Seed list first, then infer from external source.
+    """
     canonical = normalize_entity(name)
     for obj_name, obj_type in SEED_OBJECTS:
         if obj_name == canonical:
             return obj_type
+
+    # Infer from external resolver source
+    if canonical and ":" in str(canonical):
+        prefix = canonical.split(":")[0]
+        return {
+            "HGNC": "GENE",
+            "UNIPROT": "PROTEIN",
+            "PUBCHEM": "COMPOUND",
+            "NCBI": "ORGANISM",
+            "MESH": "DISEASE",
+        }.get(prefix)
+
     return None
 
 
@@ -152,6 +195,9 @@ def is_valid_link(relation, subj_type, obj_type):
         return False
     a, b = LINK_TYPES[relation]
     if a is None and b is None:
+        return True
+    # Relaxed check: if we know the types, enforce; if we don't, allow it.
+    if subj_type is None or obj_type is None:
         return True
     return subj_type == a and obj_type == b
 
@@ -162,21 +208,25 @@ if __name__ == "__main__":
     print(f"Seed objects: {len(SEED_OBJECTS)}")
     print(f"Aliases:      {len(ALIASES)}\n")
 
-    print("=== Normalization ===")
-    for t in ["HER2", "HER-2/neu", "p53", "Herceptin", "BRCA-1"]:
-        print(f"  {t:15s} -> {normalize_entity(t)}")
+    print("=== Seed lookup ===")
+    for t in ["HER2", "p53", "BRCA-1", "Herceptin"]:
+        r = resolve_name(t, use_external=False)
+        print(f"  {t:18s} -> {r['entity_id']}  ({r['source']}, {r['status']})")
 
-    print("\n=== resolve_name() ===")
-    for t in ["TP53 mutations", "HER2 protein",
-              "aggressive breast cancer progression",
-              "DNA_repair_mechanisms", "unknown protein X"]:
-        r = resolve_name(t)
-        print(f"  {t:38s} -> {r['entity_id']}  state={r['state']}  prop={r['property']}")
+    print("\n=== External fallback ===")
+    for t in ["aspirin", "E. coli", "breast cancer", "some_random_xyz"]:
+        r = resolve_name(t, use_external=True)
+        print(f"  {t:18s} -> {r['entity_id']}  "
+              f"({r['source']}, {r['status']}, reason={r['reason']})")
+
+    print("\n=== Type inference ===")
+    for t in ["BRCA1", "aspirin", "E. coli", "breast cancer"]:
+        print(f"  {t:18s} -> {object_type_of(t)}")
 
     print("\n=== Link validity ===")
     for rel, s, o in [("INHIBITS", "GENE", "PROTEIN"),
                       ("BINDS", "DRUG", "PROTEIN"),
-                      ("BINDS", "GENE", "PROTEIN"),
-                      ("INCREASES_RISK_OF", "GENE", "DISEASE")]:
+                      ("INCREASES_RISK_OF", "GENE", "DISEASE"),
+                      ("DECREASES_RISK_OF", "GENE", "DISEASE")]:
         mark = "OK " if is_valid_link(rel, s, o) else "no "
         print(f"  {mark} {s} --{rel}--> {o}")
