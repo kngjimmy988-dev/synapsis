@@ -1,20 +1,13 @@
 """
-entity_resolver.py  (final, fixed)
+entity_resolver.py  (v3 — fixed)
 Synapsis — resolve scientific entities against public databases.
 
 Principle: honesty is the goal.
-  - Every lookup is typed
-  - Every failure records WHY and WHAT was tried
-  - Never invents an ID
-  - Never fuzzy-matches
-  - Caches every result
 
-Databases (all tested, free, no keys):
-  HGNC       → human gene symbols
-  UniProt    → human reviewed proteins
-  PubChem    → chemical compounds
-  NCBI Tax   → organisms
-  MeSH       → diseases and medical concepts
+Fixes since v2:
+  - Genes without digits (APOE, CFTR, KRAS) now recognized as GENE.
+  - 3-letter all-caps acronyms (CNN, MCI, DNA) rejected unless they're known genes.
+  - For UNKNOWN type, DB label must contain the query.
 """
 
 import json
@@ -63,9 +56,22 @@ def _get(url, params=None, timeout=15):
 # ────────────────────────────────────────────────────────────
 # TYPE GUESSING
 # ────────────────────────────────────────────────────────────
-# Real gene symbols: letters followed by digits (BRCA1, TP53, HER2, CDH1).
-# Requires at least one digit, so CHITOSAN / ASPIRIN / INSULIN are not genes.
+# Gene symbols WITH digits: BRCA1, TP53, HER2, CDH1
 GENE_RE = re.compile(r"^[A-Z]{2,8}\d+[A-Z]?$")
+
+# Genes with no digit. Kept small but covers common cases.
+KNOWN_NO_DIGIT_GENES = {
+    "APOE", "APOB", "APOA1", "APOA2", "CFTR", "KRAS", "NRAS", "HRAS",
+    "MYC", "FOS", "JUN", "RB1", "VHL", "WT1", "NF1", "NF2", "RET",
+    "MET", "ALK", "EGFR", "ERBB2", "MTOR", "PTEN", "SMAD4",
+    "CDKN2A", "CDKN2B", "E2F1", "MYCN", "BCL2", "BCL6", "MCL1",
+    "ACE", "AGT", "REN", "INS", "GCG", "LEP", "ADIPOQ", "PPARG",
+    "TNF", "IL6", "IL1B", "IFNG", "TGFB1", "VEGFA", "HIF1A",
+    "SOD1", "SOD2", "CAT", "GPX1", "NOS1", "NOS2", "NOS3",
+    "ATM", "CHEK1", "CHEK2",
+    "MLH1", "MSH2", "MSH6", "PMS2",
+    # Note: BRCA1/BRCA2/TP53 handled by GENE_RE (they have digits)
+}
 
 ORGANISM_HINTS = {
     "coli", "aureus", "sapiens", "cerevisiae", "aeruginosa",
@@ -76,6 +82,7 @@ DISEASE_HINTS = {
     "cancer", "carcinoma", "tumor", "tumour", "syndrome", "disease",
     "diabetes", "hypertension", "leukemia", "lymphoma", "melanoma",
     "neoplasms", "neoplasm", "infection", "disorder",
+    "alzheimer", "parkinson", "arthritis", "asthma", "stroke",
 }
 
 CHEMICAL_HINTS = {
@@ -91,25 +98,36 @@ def guess_type(name):
         return "UNKNOWN"
     clean = name.strip().replace("_", " ")
     low = clean.lower()
-    compact = clean.replace(" ", "").upper()
+    compact = clean.replace(" ", "").replace("-", "").upper()
 
+    # 1) Known no-digit gene symbols
+    if compact in KNOWN_NO_DIGIT_GENES:
+        return "GENE"
+
+    # 2) Organism hints
     for hint in ORGANISM_HINTS:
         if hint in low:
             return "ORGANISM"
+
+    # 3) Disease hints
     for hint in DISEASE_HINTS:
         if hint in low:
             return "DISEASE"
+
+    # 4) Chemical hints
     for hint in CHEMICAL_HINTS:
         if hint in low:
             return "COMPOUND"
+
+    # 5) Genes with digits
     if GENE_RE.match(compact):
         return "GENE"
+
     return "UNKNOWN"
 
 
 # ────────────────────────────────────────────────────────────
 # DATABASE LOOKUPS
-# Each returns (id, type, label) or None.
 # ────────────────────────────────────────────────────────────
 def try_hgnc(name):
     try:
@@ -197,14 +215,30 @@ def try_mesh(name):
 # ────────────────────────────────────────────────────────────
 # TYPED DISPATCH
 # ────────────────────────────────────────────────────────────
+def _label_contains(returned_label, query):
+    """Check that the DB's returned label actually contains the query (loose)."""
+    if not returned_label or not query:
+        return False
+    a = returned_label.lower().replace("_", " ").strip()
+    b = query.lower().replace("_", " ").strip()
+    return b in a or a in b
+
+
 def resolve_external(name):
-    """
-    Returns ((id, type, label) or None, tried_list).
-    """
     if not name or len(name.strip()) < 2:
         return (None, ["skipped:name_too_short"])
     if len(name.strip()) > 80:
         return (None, ["skipped:name_too_long"])
+
+    clean = name.strip()
+    compact = clean.replace(" ", "").replace("-", "").upper()
+
+    # Reject bare 3-letter all-caps acronyms unless they're known genes.
+    if (len(compact) == 3
+            and compact.isalpha()
+            and compact.isupper()
+            and compact not in KNOWN_NO_DIGIT_GENES):
+        return (None, ["skipped:short_acronym"])
 
     kind = guess_type(name)
     tried = []
@@ -231,7 +265,7 @@ def resolve_external(name):
         tried.append("mesh")
         time.sleep(0.2)
         hit = try_mesh(name)
-        if hit:
+        if hit and _label_contains(hit[2], name):
             return (hit, tried)
 
     elif kind == "COMPOUND":
@@ -242,15 +276,17 @@ def resolve_external(name):
             return (hit, tried)
 
     else:
+        # UNKNOWN: try MeSH, then PubChem. Require label to match query.
         tried.append("mesh")
         time.sleep(0.2)
         hit = try_mesh(name)
-        if hit:
+        if hit and _label_contains(hit[2], name):
             return (hit, tried)
+
         tried.append("pubchem")
         time.sleep(0.2)
         hit = try_pubchem(name)
-        if hit:
+        if hit and _label_contains(hit[2], name):
             return (hit, tried)
 
     return (None, tried)
@@ -329,26 +365,30 @@ def resolve(name, seed_lookup=None, use_external=True):
 # SELF-TEST
 # ────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    print("=== entity_resolver — final self-test ===\n")
+    print("=== entity_resolver v3 self-test ===\n")
 
     if os.path.exists(CACHE_FILE):
         os.remove(CACHE_FILE)
 
     tests = [
-        "BRCA1",
-        "TP53",
-        "aspirin",
-        "E. coli",
-        "breast cancer",
-        "chitosan",
-        "some_random_xyz_12",
+        "BRCA1",              # expect HGNC or UNIPROT
+        "TP53",               # expect HGNC or UNIPROT
+        "APOE",               # expect HGNC:613  (Bug 1 fix)
+        "CFTR",               # expect HGNC
+        "aspirin",            # expect PUBCHEM:2244
+        "E. coli",            # expect NCBI:562
+        "breast cancer",      # expect MESH
+        "Alzheimer disease",  # expect MESH
+        "CNN",                # expect unresolved (Bug 2 fix)
+        "MCI",                # expect unresolved
+        "chitosan",           # expect unresolved (polymer)
     ]
 
     for name in tests:
         r = resolve(name, use_external=True)
         print(f"  {name:22s} -> {str(r['entity_id']):22s} "
               f"({r['source']}, {r['type']}, {r['status']})")
-        if r["reason"]:
+        if r["reason"] and r["reason"] != "not_found_in_any_db":
             print(f"     reason: {r['reason']}  |  tried: {r['tried']}")
 
     print(f"\nCache saved to {CACHE_FILE}")
