@@ -1,18 +1,25 @@
 """
 pipeline.py
-Synapsis — the full verification pipeline (v0.3).
+Synapsis — the full verification pipeline (v0.4 — plain English).
 
   raw text + PMID
         ↓
-  extractor       -> raw facts with quotes
+  extractor        -> raw facts with quotes
         ↓
-  resolve_name    -> entity IDs + state/property qualifiers
+  resolve_name     -> entity IDs + qualifiers
         ↓
-  quote_verifier  -> quote must exist in source
+  quote_verifier   -> quote must exist in the source
         ↓
-  evidence_checker-> meaning check (rules)
+  evidence_checker -> meaning check (rules)
         ↓
-  claim_ledger    -> dedup + store verified claims
+  claim_ledger     -> dedup + store
+
+All user-facing output uses plain English:
+  Found       = the tool spotted this claim
+  Verified    = the quote supports the claim
+  Needs a look= the tool couldn't confirm it
+  Failed      = the quote does not support it
+  Repeats     = same claim from the same source, counted once
 """
 
 from datetime import datetime, timezone
@@ -28,7 +35,7 @@ from claim_ledger import add_claim, load_ledger
 def _run_meta():
     return {
         "model": "openai/gpt-oss-120b",
-        "pipeline_version": "0.3",
+        "pipeline_version": "0.4",
         "temperature": 0.1,
         "date": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }
@@ -37,29 +44,29 @@ def _run_meta():
 def process_abstract(abstract, pmid, verbose=True):
     if verbose:
         print("=" * 60)
-        print(f"PIPELINE v0.3  |  PMID {pmid}")
+        print(f"SYNAPSIS  |  PMID {pmid}")
         print("=" * 60)
 
     if verbose:
-        print("\n[1] Extracting facts with Groq LLM...")
+        print("\n[1] Reading the abstract...")
     raw_facts = extract_facts(abstract)
     if verbose:
-        print(f"    -> {len(raw_facts)} raw facts returned")
+        print(f"    Found {len(raw_facts)} claims.")
 
-    claims_added = []
+    created = []
     duplicates = []
-    rejected = []
     needs_review = []
+    rejected = []
 
     for i, fact in enumerate(raw_facts, 1):
         if verbose:
-            print(f"\n[2.{i}] {fact.get('subject')} --{fact.get('relation')}--> {fact.get('object')}")
+            print(f"\n[{i}] {fact.get('subject')} --{fact.get('relation')}--> {fact.get('object')}")
 
         # --- relation must be in the closed list ---
         if fact.get("relation") not in CLOSED_RELATIONS:
             rejected.append({**fact, "reason": "relation not in closed list"})
             if verbose:
-                print(f"      REJECTED - relation '{fact.get('relation')}' not allowed")
+                print(f"     FAILED - '{fact.get('relation')}' is not an allowed relation")
             continue
 
         # --- resolve subject and object ---
@@ -75,33 +82,34 @@ def process_abstract(abstract, pmid, verbose=True):
         if verbose:
             s_status = "resolved" if subj_r["status"] == "resolved" else "UNRESOLVED"
             o_status = "resolved" if obj_r["status"] == "resolved" else "UNRESOLVED"
-            print(f"      {subj} ({subj_type}, {s_status}) -> {obj} ({obj_type}, {o_status})")
+            print(f"     entities: {subj} ({s_status})  ->  {obj} ({o_status})")
 
-        # --- if either entity is unresolved, flag for review, don't store ---
+        # --- if either entity is unresolved, flag, don't store as verified ---
         if subj_r["status"] == "unresolved" or obj_r["status"] == "unresolved":
-            reason = f"unresolved entity: {subj if subj_r['status']=='unresolved' else obj}"
+            who = subj if subj_r["status"] == "unresolved" else obj
+            reason = f"entity not recognized: {who}"
             needs_review.append({**fact, "reason": reason})
             if verbose:
-                print(f"      REVIEW - {reason}")
+                print(f"     NEEDS A LOOK - {reason}")
             continue
 
-        # --- link type check (only when both types are known) ---
+        # --- link type check (when both types known) ---
         if subj_type and obj_type:
             if not is_valid_link(fact["relation"], subj_type, obj_type):
-                reason = f"link type invalid: {subj_type} --{fact['relation']}--> {obj_type}"
+                reason = f"{subj_type} --{fact['relation']}--> {obj_type} is not allowed"
                 rejected.append({**fact, "reason": reason})
                 if verbose:
-                    print(f"      REJECTED - {reason}")
+                    print(f"     FAILED - {reason}")
                 continue
 
-        # --- build context: fold state from subject/object into it ---
+        # --- build context: fold state from subject/object ---
         ctx = dict(fact.get("context", {}) or {})
         if subj_r["state"] and "state" not in ctx:
             ctx["state"] = subj_r["state"]
         if obj_r["state"] and "state" not in ctx:
             ctx["state"] = obj_r["state"]
 
-        # --- build the claim record ---
+        # --- build claim ---
         claim = make_claim(
             subject=subj,
             relation=fact["relation"],
@@ -121,25 +129,24 @@ def process_abstract(abstract, pmid, verbose=True):
         # --- quote verification ---
         vres = verify_quote(claim["source"]["quote"], abstract)
         if not vres["verified"]:
-            rejected.append({**fact, "reason": f"quote failed: {vres['reason']}"})
+            rejected.append({**fact, "reason": f"quote not in source: {vres['reason']}"})
             if verbose:
-                print(f"      REJECTED - quote check failed: {vres['reason']}")
+                print(f"     FAILED - quote not found in source")
             continue
         claim["status"] = "quote_verified"
 
         # --- meaning check ---
         mres = meaning_check(claim["relation"], claim["context"], claim["source"]["quote"])
         if mres["result"] == "fail":
-            rejected.append({**fact, "reason": f"meaning check failed: {mres['flags']}"})
+            rejected.append({**fact, "reason": f"meaning check: {mres['flags']}"})
             if verbose:
-                print(f"      REJECTED - meaning check: {mres['flags']}")
+                print(f"     FAILED - {mres['flags']}")
             continue
         if mres["result"] == "review":
             claim["status"] = "needs_review"
-            needs_review.append({**fact, "reason": f"meaning check: {mres['flags']}"})
+            needs_review.append({**fact, "reason": f"{mres['flags']}"})
             if verbose:
-                print(f"      REVIEW - meaning check: {mres['flags']}")
-            # still store, but as needs_review
+                print(f"     NEEDS A LOOK - {mres['flags']}")
         else:
             claim["status"] = "evidence_checked"
 
@@ -148,48 +155,45 @@ def process_abstract(abstract, pmid, verbose=True):
         if result["action"] == "duplicate":
             duplicates.append(result["claim"]["id"])
             if verbose:
-                print(f"      DUPLICATE of claim #{result['claim']['id']} (extra run logged)")
+                print(f"     REPEAT of #{result['claim']['id']}")
         else:
-            claims_added.append(result["claim"])
+            created.append(result["claim"])
             if verbose:
-                print(f"      STORED (id={result['claim']['id']}, status={result['claim']['status']})")
+                print(f"     VERIFIED (id={result['claim']['id']})")
 
     summary = {
         "pmid": pmid,
         "extracted": len(raw_facts),
-        "created": len(claims_added),
+        "created": len(created),
         "duplicates": len(duplicates),
         "needs_review": len(needs_review),
         "rejected": len(rejected),
-        "claims": claims_added,
+        "claims": created,
     }
 
     if verbose:
         print("\n" + "=" * 60)
-        print(f"SUMMARY - extracted: {summary['extracted']}, "
-              f"created: {summary['created']}, "
-              f"duplicates: {summary['duplicates']}, "
-              f"needs_review: {summary['needs_review']}, "
-              f"rejected: {summary['rejected']}")
+        print(f"SUMMARY — Found {summary['extracted']}, "
+              f"Verified {summary['created']}, "
+              f"Repeats {summary['duplicates']}, "
+              f"Needs a look {summary['needs_review']}, "
+              f"Failed {summary['rejected']}")
         print("=" * 60)
 
     return summary
 
 
 if __name__ == "__main__":
-    sample_abstract = """
+    sample = """
     BRCA1 mutations are known to impair DNA repair mechanisms in cells.
-    Recent studies show that impaired DNA repair leads to accumulation of
-    mutations in the TP53 gene. TP53 mutations have been strongly linked
-    to the development of breast cancer. Additionally, overexpression of
-    the HER2 protein is associated with aggressive breast cancer progression.
+    TP53 mutations have been strongly linked to the development of breast cancer.
     """
 
-    result = process_abstract(sample_abstract, pmid="TEST0001")
+    result = process_abstract(sample, pmid="TEST0001")
 
-    print("\n\nFINAL LEDGER SUMMARY:")
+    print("\n\nFINAL LEDGER:")
     ledger = load_ledger()
-    print(f"  Total claims in ledger: {len(ledger['claims'])}")
+    print(f"  Total claims stored: {len(ledger['claims'])}")
     for c in ledger["claims"]:
         runs = len(c.get("runs", []))
         print(f"  #{c['id']}: {c['subject']} --{c['relation']}--> {c['object']}"
