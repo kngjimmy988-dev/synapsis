@@ -9,27 +9,38 @@ from PIL import Image, ImageFilter, ImageDraw
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="Postcard VFX", page_icon="✈️", layout="centered")
 
-# --- CUSTOM CSS (To make it look like a friendly app, not a data tool) ---
+# --- CUSTOM CSS ---
 st.markdown("""
     <style>
     .stButton>button {
         width: 100%;
-        background-color: #FFC107; /* Golden Yellow */
+        background-color: #FFC107; 
         color: black;
         font-size: 20px;
         border-radius: 10px;
         height: 50px;
     }
-    .stSlider {
-        padding-bottom: 20px;
-    }
-    h1, h2, h3 {
-        color: #005662; /* Deep Teal */
-    }
+    h1, h2, h3 { color: #005662; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- HELPER FUNCTIONS (Same math as before) ---
+# --- HELPER FUNCTIONS ---
+
+def has_green_screen(img):
+    """Checks if the image actually has enough green pixels to be a green screen."""
+    img = img.convert("RGB")
+    data = np.array(img)
+    r = data[:, :, 0].astype(int)
+    g = data[:, :, 1].astype(int)
+    b = data[:, :, 2].astype(int)
+    
+    # Look for bright green pixels
+    green_mask = (g > r + 40) & (g > b + 40)
+    green_ratio = np.sum(green_mask) / (img.width * img.height)
+    
+    # If more than 5% of the image is green, it's a green screen
+    return green_ratio > 0.05
+
 def remove_green_screen(img):
     img = img.convert("RGBA")
     data = np.array(img)
@@ -78,13 +89,11 @@ def create_composite(person, background, scale, x_pos, y_pos, sun_angle):
     person_width = int(person.width * (target_height / person.height))
     person = person.resize((person_width, target_height), Image.Resampling.LANCZOS)
 
-    # Lighting
     person_data = np.array(person).astype(np.float32)
     gradient = np.linspace(1.15, 0.85, person_width) 
     for i in range(3): person_data[:, :, i] = person_data[:, :, i] * gradient
     person = Image.fromarray(np.clip(person_data, 0, 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(radius=0.8))
 
-    # Shadows
     cast_shadow = Image.new("RGBA", person.size, (0, 0, 0, 0))
     cast_shadow.putalpha(person.split()[3]) 
     cast_shadow = cast_shadow.resize((int(person_width * 1.5), int(target_height * 0.2)), Image.Resampling.LANCZOS)
@@ -101,7 +110,6 @@ def create_composite(person, background, scale, x_pos, y_pos, sun_angle):
     ImageDraw.Draw(contact_shadow).ellipse([10, 10, person_width-10, 35], fill=(0, 0, 0, 200))
     contact_shadow = contact_shadow.filter(ImageFilter.GaussianBlur(radius=3))
     
-    # Background Grade
     background = background.filter(ImageFilter.GaussianBlur(radius=1.5))
     bg_data = np.array(background).astype(np.float32)
     vignette = Image.new('L', (width, height), 0)
@@ -111,7 +119,6 @@ def create_composite(person, background, scale, x_pos, y_pos, sun_angle):
     for i in range(3): bg_data[:, :, i] = bg_data[:, :, i] * (0.7 + (0.3 * vig_data))
     background = Image.fromarray(np.clip(bg_data, 0, 255).astype(np.uint8))
 
-    # Combine
     x_offset = int((width * x_pos) - (person_width / 2))
     y_offset = int((height * y_pos) - target_height)
 
@@ -124,15 +131,12 @@ def create_composite(person, background, scale, x_pos, y_pos, sun_angle):
     return background
 
 # --- UI FLOW ---
-
 st.title("✈️ Where do you want to be?")
 st.write("Make it look like you were there. No editing skills needed.")
-
 st.divider()
 
-# STEP 1: Pick a Place
 st.subheader("Step 1: Pick a place")
-location = st.text_input("Search a location (e.g., Eiffel Tower, Lagos Beach, Cyberpunk city)", "Sunny beach")
+location = st.text_input("Search a location", "Sunny beach")
 
 if st.button("Find this place"):
     with st.spinner("Finding your light..."):
@@ -143,7 +147,6 @@ if st.button("Find this place"):
         else:
             st.error("Place not found. Try another search.")
 
-# STEP 2: Add yourself
 if 'bg_img' in st.session_state:
     st.divider()
     st.subheader("Step 2: Add yourself")
@@ -153,18 +156,26 @@ if 'bg_img' in st.session_state:
         person_img = Image.open(uploaded_file)
         st.image(person_img, caption="Your Photo", width=200)
         
+        # --- THE SMART GUARD ---
+        if not has_green_screen(person_img):
+            st.error("🚨 **No Green Screen Detected!**")
+            st.info("It looks like you uploaded a photo without a green background. Our math needs a solid green color to cut you out perfectly.\n\n"
+                    "**Tips for Coily Hair & Perfect Edges:**\n"
+                    "1. Stand in front of a bright green cloth.\n"
+                    "2. Light the back of your hair well so the details don't blend into the dark.\n"
+                    "3. Stand 2 meters away from the cloth to avoid green light bouncing on your skin.")
+            st.stop() # Stops the app here so it doesn't make a floating portal!
+        
+        # If we get here, it has a green screen!
+        st.success("✅ Green screen detected! You're ready to go.")
         st.divider()
         st.subheader("Step 3: Make it blend")
         
-        # Sliders
-        st.write("**Size & Position**")
         c1, c2, c3 = st.columns(3)
         scale = c1.slider("Size", 0.10, 0.50, 0.25, 0.01)
         x_pos = c2.slider("Left / Right", 0.0, 1.0, 0.50, 0.01)
         y_pos = c3.slider("Up / Down", 0.0, 1.0, 0.85, 0.01)
         
-        # Sun Compass (Simulated with a slider)
-        st.write("**Sun Compass (Shadow Direction)**")
         sun_angle = st.slider("Drag to move the shadow", -90, 90, -15, 5)
         
         if st.button("🚀 Make my scene"):
@@ -172,23 +183,16 @@ if 'bg_img' in st.session_state:
                 cutout = remove_green_screen(person_img)
                 final_img = create_composite(cutout, st.session_state['bg_img'], scale, x_pos, y_pos, sun_angle)
                 
-                # Show Result
                 st.image(final_img, caption="Your Scene", use_column_width=True)
                 
-                # REALISM METER (Simulated based on sliders)
                 st.write("### Realism Meter")
                 if scale < 0.15 or scale > 0.40:
                     st.progress(40)
-                    st.warning("⚠️ 40% — The person looks too big or too small. Adjust the size.")
+                    st.warning("⚠️ 40% — The person looks too big or too small.")
                 else:
                     st.progress(85)
                     st.success("✅ 85% — This looks believable!")
                 
-                # Not Happy Button
-                if st.button("😠 Not Happy? Fix it for me"):
-                    st.info("We lowered the sharpness and softened the shadow. (Feature coming soon!)")
-                
-                # Download
                 buf = io.BytesIO()
                 final_img.save(buf, format="JPEG")
                 st.download_button("Save to my Phone", buf.getvalue(), "my_scene.jpg", "image/jpeg")
