@@ -27,18 +27,13 @@ st.markdown("""
 # --- HELPER FUNCTIONS ---
 
 def has_green_screen(img):
-    """Checks if the image actually has enough green pixels to be a green screen."""
     img = img.convert("RGB")
     data = np.array(img)
     r = data[:, :, 0].astype(int)
     g = data[:, :, 1].astype(int)
     b = data[:, :, 2].astype(int)
-    
-    # Look for bright green pixels
     green_mask = (g > r + 40) & (g > b + 40)
     green_ratio = np.sum(green_mask) / (img.width * img.height)
-    
-    # If more than 5% of the image is green, it's a green screen
     return green_ratio > 0.05
 
 def remove_green_screen(img):
@@ -80,7 +75,7 @@ def download_background(place_name):
     except Exception:
         return None
 
-def create_composite(person, background, scale, x_pos, y_pos, sun_angle):
+def create_composite(person, background, scale, x_pos, y_pos, sun_angle, sink):
     width, height = background.size
     bbox = person.getbbox()
     if bbox: person = person.crop(bbox)
@@ -88,6 +83,13 @@ def create_composite(person, background, scale, x_pos, y_pos, sun_angle):
     target_height = int(height * scale)
     person_width = int(person.width * (target_height / person.height))
     person = person.resize((person_width, target_height), Image.Resampling.LANCZOS)
+
+    # --- THE SINK LOGIC ---
+    # If sink > 0, we cut off the bottom of the person and push them down
+    if sink > 0:
+        new_height = max(10, target_height - sink)
+        person = person.crop((0, 0, person_width, new_height))
+        target_height = new_height # Update height for shadow/positioning
 
     person_data = np.array(person).astype(np.float32)
     gradient = np.linspace(1.15, 0.85, person_width) 
@@ -120,7 +122,8 @@ def create_composite(person, background, scale, x_pos, y_pos, sun_angle):
     background = Image.fromarray(np.clip(bg_data, 0, 255).astype(np.uint8))
 
     x_offset = int((width * x_pos) - (person_width / 2))
-    y_offset = int((height * y_pos) - target_height)
+    # We add the sink amount to the Y offset so they push down into the water/sand
+    y_offset = int((height * y_pos) - target_height) + sink
 
     shadow_x = x_offset - int(cast_shadow.width * 0.4) 
     shadow_y = y_offset + target_height - int(cast_shadow.height * 0.8)
@@ -156,17 +159,11 @@ if 'bg_img' in st.session_state:
         person_img = Image.open(uploaded_file)
         st.image(person_img, caption="Your Photo", width=200)
         
-        # --- THE SMART GUARD ---
         if not has_green_screen(person_img):
             st.error("🚨 **No Green Screen Detected!**")
-            st.info("It looks like you uploaded a photo without a green background. Our math needs a solid green color to cut you out perfectly.\n\n"
-                    "**Tips for Coily Hair & Perfect Edges:**\n"
-                    "1. Stand in front of a bright green cloth.\n"
-                    "2. Light the back of your hair well so the details don't blend into the dark.\n"
-                    "3. Stand 2 meters away from the cloth to avoid green light bouncing on your skin.")
-            st.stop() # Stops the app here so it doesn't make a floating portal!
+            st.info("It looks like you uploaded a photo without a green background. Our math needs a solid green color to cut you out perfectly.\n\n**Tips for Coily Hair & Perfect Edges:**\n1. Stand in front of a bright green cloth.\n2. Light the back of your hair well so the details don't blend into the dark.\n3. Stand 2 meters away from the cloth to avoid green light bouncing on your skin.")
+            st.stop()
         
-        # If we get here, it has a green screen!
         st.success("✅ Green screen detected! You're ready to go.")
         st.divider()
         st.subheader("Step 3: Make it blend")
@@ -176,12 +173,15 @@ if 'bg_img' in st.session_state:
         x_pos = c2.slider("Left / Right", 0.0, 1.0, 0.50, 0.01)
         y_pos = c3.slider("Up / Down", 0.0, 1.0, 0.85, 0.01)
         
+        # THE NEW SLIDER
+        sink = st.slider("Sink into Ground / Water (Fixes Physics!)", 0, 150, 0, 5)
+        
         sun_angle = st.slider("Drag to move the shadow", -90, 90, -15, 5)
         
         if st.button("🚀 Make my scene"):
             with st.spinner("Adding your shadow... Matching the light..."):
                 cutout = remove_green_screen(person_img)
-                final_img = create_composite(cutout, st.session_state['bg_img'], scale, x_pos, y_pos, sun_angle)
+                final_img = create_composite(cutout, st.session_state['bg_img'], scale, x_pos, y_pos, sun_angle, sink)
                 
                 st.image(final_img, caption="Your Scene", use_column_width=True)
                 
