@@ -85,17 +85,17 @@ def create_composite(person, background, scale, x_pos, y_pos, sun_angle, sink):
     person = person.resize((person_width, target_height), Image.Resampling.LANCZOS)
 
     # --- THE SINK LOGIC ---
-    # If sink > 0, we cut off the bottom of the person and push them down
     if sink > 0:
         new_height = max(10, target_height - sink)
         person = person.crop((0, 0, person_width, new_height))
-        target_height = new_height # Update height for shadow/positioning
+        target_height = new_height # Update height
 
     person_data = np.array(person).astype(np.float32)
     gradient = np.linspace(1.15, 0.85, person_width) 
     for i in range(3): person_data[:, :, i] = person_data[:, :, i] * gradient
     person = Image.fromarray(np.clip(person_data, 0, 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(radius=0.8))
 
+    # --- SHADOW LOGIC (FIXED) ---
     cast_shadow = Image.new("RGBA", person.size, (0, 0, 0, 0))
     cast_shadow.putalpha(person.split()[3]) 
     cast_shadow = cast_shadow.resize((int(person_width * 1.5), int(target_height * 0.2)), Image.Resampling.LANCZOS)
@@ -122,11 +122,12 @@ def create_composite(person, background, scale, x_pos, y_pos, sun_angle, sink):
     background = Image.fromarray(np.clip(bg_data, 0, 255).astype(np.uint8))
 
     x_offset = int((width * x_pos) - (person_width / 2))
-    # We add the sink amount to the Y offset so they push down into the water/sand
     y_offset = int((height * y_pos) - target_height) + sink
 
+    # FIXED SHADOW POSITION: It now follows the sink offset exactly
     shadow_x = x_offset - int(cast_shadow.width * 0.4) 
-    shadow_y = y_offset + target_height - int(cast_shadow.height * 0.8)
+    shadow_y = y_offset + target_height - int(cast_shadow.height * 0.8) + sink
+    
     background.paste(cast_shadow, (shadow_x, shadow_y), cast_shadow)
     background.paste(contact_shadow, (x_offset, y_offset + target_height - 20), contact_shadow)
     background.paste(person, (x_offset, y_offset), person)
@@ -173,7 +174,6 @@ if 'bg_img' in st.session_state:
         x_pos = c2.slider("Left / Right", 0.0, 1.0, 0.50, 0.01)
         y_pos = c3.slider("Up / Down", 0.0, 1.0, 0.85, 0.01)
         
-        # THE NEW SLIDER
         sink = st.slider("Sink into Ground / Water (Fixes Physics!)", 0, 150, 0, 5)
         
         sun_angle = st.slider("Drag to move the shadow", -90, 90, -15, 5)
