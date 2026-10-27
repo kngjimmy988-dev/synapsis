@@ -196,3 +196,4 @@ if 'bg_img' in st.session_state:
                 buf = io.BytesIO()
                 final_img.save(buf, format="JPEG")
                 st.download_button("Save to my Phone", buf.getvalue(), "my_scene.jpg", "image/jpeg")
+
