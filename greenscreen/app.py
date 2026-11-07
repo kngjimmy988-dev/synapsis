@@ -6,6 +6,7 @@ import json
 import io
 from PIL import Image, ImageFilter, ImageDraw
 import requests 
+from groq import Groq
 
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="Postcard VFX", page_icon="✈️", layout="centered")
@@ -13,8 +14,10 @@ st.set_page_config(page_title="Postcard VFX", page_icon="✈️", layout="center
 # --- SECURE API KEY LOADING ---
 try:
     REMOVEBG_API_KEY = st.secrets["REMOVEBG_API_KEY"]
+    GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
 except Exception:
     REMOVEBG_API_KEY = "YOUR_REMOVEBG_API_KEY"
+    GROQ_API_KEY = "YOUR_GROQ_API_KEY"
 
 # --- CUSTOM CSS ---
 st.markdown("""
@@ -31,6 +34,39 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
+# --- THE AI DIRECTOR (GROQ) ---
+def direct_prompt(user_idea):
+    if GROQ_API_KEY == "YOUR_GROQ_API_KEY":
+        return user_idea # Fallback if no key
+        
+    try:
+        client = Groq(api_key=GROQ_API_KEY)
+        prompt = f"""
+        You are an expert Hollywood VFX director. 
+        The user wants to generate a background image for a scene where they will place a real person.
+        Take their simple idea and rewrite it into a highly detailed, cinematic image generation prompt.
+        
+        You MUST include these keywords in your prompt:
+        - Photorealistic, 8k resolution, cinematic lighting.
+        - Eye-level camera angle.
+        - Clear, flat, empty ground in the lower foreground where a person can stand.
+        - No text, no watermarks, no logos.
+        
+        User's idea: "{user_idea}"
+        
+        Return ONLY the detailed prompt text. Do not say "Here is your prompt".
+        """
+        
+        chat_completion = client.chat.completions.create(
+            messages=[{"role": "user", "content": prompt}],
+            model="llama-3.3-70b-versatile",
+            temperature=0.7,
+        )
+        return chat_completion.choices[0].message.content.strip()
+    except Exception as e:
+        st.error(f"Director Error: {e}")
+        return user_idea
+
 # --- HELPER FUNCTIONS ---
 
 def has_green_screen(img):
@@ -44,12 +80,10 @@ def remove_green_screen(img):
     img = img.convert("RGBA")
     data = np.array(img)
     r, g, b = data[:, :, 0].astype(int), data[:, :, 1].astype(int), data[:, :, 2].astype(int)
-    
     green_mask = (g > r + 60) & (g > b + 60)
     mask_data = np.where(green_mask, 0, 255).astype(np.uint8)
     mask_img = Image.fromarray(mask_data).filter(ImageFilter.MinFilter(3)).filter(ImageFilter.GaussianBlur(radius=1))
     data[:, :, 3] = np.array(mask_img)
-    
     semi_green = (g > r) & (g > b) & (data[:, :, 3] > 0)
     avg_rb = (r + b) // 2
     data[:, :, 1] = np.where(semi_green, avg_rb, data[:, :, 1])
@@ -92,7 +126,6 @@ def download_background(place_name):
 
 def generate_ai_background(prompt):
     try:
-        # Using Pollinations AI (Free, No API key needed!)
         encoded_prompt = urllib.parse.quote(prompt)
         url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1080&height=1080&nologo=true"
         req = urllib.request.Request(url, headers={'User-Agent': 'VFXApp/1.0'})
@@ -166,14 +199,22 @@ st.divider()
 st.subheader("Step 1: Create your background")
 bg_method = st.radio("How do you want your background?", ("Search Stock Photos", "Generate with AI (CGI)"))
 
-location = st.text_input("Enter a description (e.g., 'a neon cyberpunk city' or 'Mars surface')", "a futuristic sci-fi space station")
+location = st.text_input("Describe your scene", "a futuristic sci-fi space station")
 
 if st.button("Get Background"):
     with st.spinner("Creating your world..."):
         if bg_method == "Search Stock Photos":
             bg_img = download_background(location)
         else:
-            bg_img = generate_ai_background(location)
+            # THE DIRECTOR IS CALLED HERE
+            st.info("🎬 Director is designing the shot...")
+            cinematic_prompt = direct_prompt(location)
+            
+            # Show the user what the Director did (Optional, but cool)
+            with st.expander("See Director's Prompt"):
+                st.write(cinematic_prompt)
+                
+            bg_img = generate_ai_background(cinematic_prompt)
             
         if bg_img:
             st.session_state['bg_img'] = bg_img
@@ -182,6 +223,7 @@ if st.button("Get Background"):
             st.error("Failed to get background. Try another description.")
 
 if 'bg_img' in st.session_state:
+    # ... [Rest of the UI remains the same: Upload, Cutout, Blend] ...
     st.divider()
     st.subheader("Step 2: Add yourself")
     uploaded_file = st.file_uploader("Upload a photo", type=["jpg", "jpeg", "png"])
