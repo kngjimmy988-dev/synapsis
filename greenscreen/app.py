@@ -5,9 +5,18 @@ import urllib.parse
 import json
 import io
 from PIL import Image, ImageFilter, ImageDraw
+import requests 
 
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="Postcard VFX", page_icon="✈️", layout="centered")
+
+# --- SECURE API KEY LOADING ---
+# Try to get the key from Streamlit Secrets first (for the live app)
+try:
+    REMOVEBG_API_KEY = st.secrets["REMOVEBG_API_KEY"]
+except Exception:
+    # If running locally, fall back to the placeholder
+    REMOVEBG_API_KEY = "YOUR_REMOVEBG_API_KEY"
 
 # --- CUSTOM CSS ---
 st.markdown("""
@@ -54,25 +63,46 @@ def remove_green_screen(img):
     data[:, :, 1] = np.where(semi_green, avg_rb, data[:, :, 1])
     return Image.fromarray(data)
 
-def download_background(place_name):
-    url = "https://commons.wikimedia.org/w/api.php"
-    params = {
-        "action": "query", "generator": "search", "gsrsearch": f"File: {place_name}",
-        "gsrlimit": "1", "prop": "imageinfo", "iiprop": "url", "iiurlwidth": "1080", "format": "json"
-    }
-    req = urllib.request.Request(f"{url}?{urllib.parse.urlencode(params)}", headers={'User-Agent': 'VFXApp/1.0'})
+# --- THE NEW AI FUNCTION ---
+def remove_bg_ai(image_bytes):
+    if REMOVEBG_API_KEY == "YOUR_REMOVEBG_API_KEY" or not REMOVEBG_API_KEY:
+        st.error("Please add your Remove.bg API key to Streamlit Secrets first!")
+        return None
+
     try:
+        response = requests.post(
+            'https://api.remove.bg/v1.0/removebg',
+            files={'image_file': image_bytes},
+            data={'size': 'auto'},
+            headers={'X-Api-Key': REMOVEBG_API_KEY},
+        )
+        if response.status_code == requests.codes.ok:
+            return Image.open(io.BytesIO(response.content)).convert("RGBA")
+        else:
+            st.error(f"AI Error: {response.status_code} - {response.text}")
+            return None
+    except Exception as e:
+        st.error(f"Network Error: {e}")
+        return None
+
+def download_background(place_name):
+    try:
+        url = f"https://api.openverse.org/v1/images/?q={urllib.parse.quote(place_name)}&page_size=1"
+        req = urllib.request.Request(url, headers={'User-Agent': 'VFXApp/1.0'})
+        
         with urllib.request.urlopen(req) as response:
             data = json.loads(response.read().decode())
-            pages = data.get("query", {}).get("pages", {})
-            if not pages: return None
-            page_id = list(pages.keys())[0]
-            image_url = pages[page_id]["imageinfo"][0]["thumburl"]
+            results = data.get("results", [])
+            if not results:
+                return None
+            
+            image_url = results[0]["url"]
             
             img_req = urllib.request.Request(image_url, headers={'User-Agent': 'VFXApp/1.0'})
             with urllib.request.urlopen(img_req) as img_response:
                 return Image.open(io.BytesIO(img_response.read())).convert("RGB")
-    except Exception:
+    except Exception as e:
+        st.error(f"Search error: {e}")
         return None
 
 def create_composite(person, background, scale, x_pos, y_pos, sun_angle, sink):
@@ -84,18 +114,16 @@ def create_composite(person, background, scale, x_pos, y_pos, sun_angle, sink):
     person_width = int(person.width * (target_height / person.height))
     person = person.resize((person_width, target_height), Image.Resampling.LANCZOS)
 
-    # --- THE SINK LOGIC ---
     if sink > 0:
         new_height = max(10, target_height - sink)
         person = person.crop((0, 0, person_width, new_height))
-        target_height = new_height # Update height
+        target_height = new_height 
 
     person_data = np.array(person).astype(np.float32)
     gradient = np.linspace(1.15, 0.85, person_width) 
     for i in range(3): person_data[:, :, i] = person_data[:, :, i] * gradient
     person = Image.fromarray(np.clip(person_data, 0, 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(radius=0.8))
 
-    # --- SHADOW LOGIC (FIXED) ---
     cast_shadow = Image.new("RGBA", person.size, (0, 0, 0, 0))
     cast_shadow.putalpha(person.split()[3]) 
     cast_shadow = cast_shadow.resize((int(person_width * 1.5), int(target_height * 0.2)), Image.Resampling.LANCZOS)
@@ -124,7 +152,6 @@ def create_composite(person, background, scale, x_pos, y_pos, sun_angle, sink):
     x_offset = int((width * x_pos) - (person_width / 2))
     y_offset = int((height * y_pos) - target_height) + sink
 
-    # FIXED SHADOW POSITION: It now follows the sink offset exactly
     shadow_x = x_offset - int(cast_shadow.width * 0.4) 
     shadow_y = y_offset + target_height - int(cast_shadow.height * 0.8) + sink
     
@@ -140,7 +167,7 @@ st.write("Make it look like you were there. No editing skills needed.")
 st.divider()
 
 st.subheader("Step 1: Pick a place")
-location = st.text_input("Search a location", "Sunny beach")
+location = st.text_input("Search a location", "Cyberpunk city")
 
 if st.button("Find this place"):
     with st.spinner("Finding your light..."):
@@ -154,46 +181,50 @@ if st.button("Find this place"):
 if 'bg_img' in st.session_state:
     st.divider()
     st.subheader("Step 2: Add yourself")
-    uploaded_file = st.file_uploader("Upload a photo taken in front of a green screen", type=["jpg", "jpeg", "png"])
+    uploaded_file = st.file_uploader("Upload a photo", type=["jpg", "jpeg", "png"])
     
     if uploaded_file is not None:
         person_img = Image.open(uploaded_file)
-        st.image(person_img, caption="Your Photo", width=200)
+        st.image(person_img, caption="Your Original Photo", width=200)
         
-        if not has_green_screen(person_img):
-            st.error("🚨 **No Green Screen Detected!**")
-            st.info("It looks like you uploaded a photo without a green background. Our math needs a solid green color to cut you out perfectly.\n\n**Tips for Coily Hair & Perfect Edges:**\n1. Stand in front of a bright green cloth.\n2. Light the back of your hair well so the details don't blend into the dark.\n3. Stand 2 meters away from the cloth to avoid green light bouncing on your skin.")
-            st.stop()
+        cutout_method = st.radio(
+            "How should we cut you out?",
+            ("Green Screen Math (Fast, Free)", "AI Cutout (Perfect Hair, Uses API Credit)")
+        )
         
-        st.success("✅ Green screen detected! You're ready to go.")
-        st.divider()
-        st.subheader("Step 3: Make it blend")
-        
-        c1, c2, c3 = st.columns(3)
-        scale = c1.slider("Size", 0.10, 0.50, 0.25, 0.01)
-        x_pos = c2.slider("Left / Right", 0.0, 1.0, 0.50, 0.01)
-        y_pos = c3.slider("Up / Down", 0.0, 1.0, 0.85, 0.01)
-        
-        sink = st.slider("Sink into Ground / Water (Fixes Physics!)", 0, 150, 0, 5)
-        
-        sun_angle = st.slider("Drag to move the shadow", -90, 90, -15, 5)
-        
-        if st.button("🚀 Make my scene"):
-            with st.spinner("Adding your shadow... Matching the light..."):
-                cutout = remove_green_screen(person_img)
-                final_img = create_composite(cutout, st.session_state['bg_img'], scale, x_pos, y_pos, sun_angle, sink)
-                
-                st.image(final_img, caption="Your Scene", use_column_width=True)
-                
-                st.write("### Realism Meter")
-                if scale < 0.15 or scale > 0.40:
-                    st.progress(40)
-                    st.warning("⚠️ 40% — The person looks too big or too small.")
+        cutout = None
+        if st.button("Cut me out"):
+            with st.spinner("Removing background..."):
+                if cutout_method == "Green Screen Math (Fast, Free)":
+                    cutout = remove_green_screen(person_img)
+                    st.session_state['cutout'] = cutout
+                    st.success("✅ Green screen math applied!")
                 else:
-                    st.progress(85)
-                    st.success("✅ 85% — This looks believable!")
-                
-                buf = io.BytesIO()
-                final_img.save(buf, format="JPEG")
-                st.download_button("Save to my Phone", buf.getvalue(), "my_scene.jpg", "image/jpeg")
-
+                    uploaded_file.seek(0) 
+                    cutout = remove_bg_ai(uploaded_file.read())
+                    if cutout:
+                        st.session_state['cutout'] = cutout
+                        st.success("✅ AI cutout complete! Look at that hair.")
+        
+        if 'cutout' in st.session_state:
+            st.image(st.session_state['cutout'], caption="Cutout Preview", width=200)
+            st.divider()
+            st.subheader("Step 3: Make it blend")
+            
+            c1, c2, c3 = st.columns(3)
+            scale = c1.slider("Size", 0.10, 0.50, 0.25, 0.01)
+            x_pos = c2.slider("Left / Right", 0.0, 1.0, 0.50, 0.01)
+            y_pos = c3.slider("Up / Down", 0.0, 1.0, 0.85, 0.01)
+            
+            sink = st.slider("Sink into Ground / Water", 0, 150, 0, 5)
+            sun_angle = st.slider("Drag to move the shadow", -90, 90, -15, 5)
+            
+            if st.button("🚀 Make my scene"):
+                with st.spinner("Adding your shadow... Matching the light..."):
+                    final_img = create_composite(st.session_state['cutout'], st.session_state['bg_img'], scale, x_pos, y_pos, sun_angle, sink)
+                    
+                    st.image(final_img, caption="Your Scene", use_column_width=True)
+                    
+                    buf = io.BytesIO()
+                    final_img.save(buf, format="JPEG")
+                    st.download_button("Save to my Phone", buf.getvalue(), "my_scene.jpg", "image/jpeg")
