@@ -59,8 +59,8 @@ def direct_prompt(user_idea):
         
         chat_completion = client.chat.completions.create(
             messages=[{"role": "user", "content": prompt}],
-            model="llama-3.3-70b-versatile",
-            temperature=0.7,
+            model=model="llama-3.1-8b-instant",       
+ temperature=0.7,
         )
         return chat_completion.choices[0].message.content.strip()
     except Exception as e:
