@@ -11,11 +11,9 @@ import requests
 st.set_page_config(page_title="Postcard VFX", page_icon="✈️", layout="centered")
 
 # --- SECURE API KEY LOADING ---
-# Try to get the key from Streamlit Secrets first (for the live app)
 try:
     REMOVEBG_API_KEY = st.secrets["REMOVEBG_API_KEY"]
 except Exception:
-    # If running locally, fall back to the placeholder
     REMOVEBG_API_KEY = "YOUR_REMOVEBG_API_KEY"
 
 # --- CUSTOM CSS ---
@@ -38,22 +36,16 @@ st.markdown("""
 def has_green_screen(img):
     img = img.convert("RGB")
     data = np.array(img)
-    r = data[:, :, 0].astype(int)
-    g = data[:, :, 1].astype(int)
-    b = data[:, :, 2].astype(int)
+    r, g, b = data[:, :, 0].astype(int), data[:, :, 1].astype(int), data[:, :, 2].astype(int)
     green_mask = (g > r + 40) & (g > b + 40)
-    green_ratio = np.sum(green_mask) / (img.width * img.height)
-    return green_ratio > 0.05
+    return (np.sum(green_mask) / (img.width * img.height)) > 0.05
 
 def remove_green_screen(img):
     img = img.convert("RGBA")
     data = np.array(img)
-    r = data[:, :, 0].astype(int)
-    g = data[:, :, 1].astype(int)
-    b = data[:, :, 2].astype(int)
+    r, g, b = data[:, :, 0].astype(int), data[:, :, 1].astype(int), data[:, :, 2].astype(int)
     
-    threshold = 60
-    green_mask = (g > r + threshold) & (g > b + threshold)
+    green_mask = (g > r + 60) & (g > b + 60)
     mask_data = np.where(green_mask, 0, 255).astype(np.uint8)
     mask_img = Image.fromarray(mask_data).filter(ImageFilter.MinFilter(3)).filter(ImageFilter.GaussianBlur(radius=1))
     data[:, :, 3] = np.array(mask_img)
@@ -63,12 +55,10 @@ def remove_green_screen(img):
     data[:, :, 1] = np.where(semi_green, avg_rb, data[:, :, 1])
     return Image.fromarray(data)
 
-# --- THE NEW AI FUNCTION ---
 def remove_bg_ai(image_bytes):
     if REMOVEBG_API_KEY == "YOUR_REMOVEBG_API_KEY" or not REMOVEBG_API_KEY:
         st.error("Please add your Remove.bg API key to Streamlit Secrets first!")
         return None
-
     try:
         response = requests.post(
             'https://api.remove.bg/v1.0/removebg',
@@ -89,20 +79,27 @@ def download_background(place_name):
     try:
         url = f"https://api.openverse.org/v1/images/?q={urllib.parse.quote(place_name)}&page_size=1"
         req = urllib.request.Request(url, headers={'User-Agent': 'VFXApp/1.0'})
-        
         with urllib.request.urlopen(req) as response:
             data = json.loads(response.read().decode())
             results = data.get("results", [])
-            if not results:
-                return None
-            
+            if not results: return None
             image_url = results[0]["url"]
-            
             img_req = urllib.request.Request(image_url, headers={'User-Agent': 'VFXApp/1.0'})
             with urllib.request.urlopen(img_req) as img_response:
                 return Image.open(io.BytesIO(img_response.read())).convert("RGB")
+    except Exception:
+        return None
+
+def generate_ai_background(prompt):
+    try:
+        # Using Pollinations AI (Free, No API key needed!)
+        encoded_prompt = urllib.parse.quote(prompt)
+        url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1080&height=1080&nologo=true"
+        req = urllib.request.Request(url, headers={'User-Agent': 'VFXApp/1.0'})
+        with urllib.request.urlopen(req) as img_response:
+            return Image.open(io.BytesIO(img_response.read())).convert("RGB")
     except Exception as e:
-        st.error(f"Search error: {e}")
+        st.error(f"Generation Error: {e}")
         return None
 
 def create_composite(person, background, scale, x_pos, y_pos, sun_angle, sink):
@@ -162,21 +159,27 @@ def create_composite(person, background, scale, x_pos, y_pos, sun_angle, sink):
     return background
 
 # --- UI FLOW ---
-st.title("✈️ Where do you want to be?")
-st.write("Make it look like you were there. No editing skills needed.")
+st.title("✈️ Full CGI Experience")
+st.write("Generate a world, add yourself, make it real.")
 st.divider()
 
-st.subheader("Step 1: Pick a place")
-location = st.text_input("Search a location", "Cyberpunk city")
+st.subheader("Step 1: Create your background")
+bg_method = st.radio("How do you want your background?", ("Search Stock Photos", "Generate with AI (CGI)"))
 
-if st.button("Find this place"):
-    with st.spinner("Finding your light..."):
-        bg_img = download_background(location)
+location = st.text_input("Enter a description (e.g., 'a neon cyberpunk city' or 'Mars surface')", "a futuristic sci-fi space station")
+
+if st.button("Get Background"):
+    with st.spinner("Creating your world..."):
+        if bg_method == "Search Stock Photos":
+            bg_img = download_background(location)
+        else:
+            bg_img = generate_ai_background(location)
+            
         if bg_img:
             st.session_state['bg_img'] = bg_img
             st.image(bg_img, use_column_width=True)
         else:
-            st.error("Place not found. Try another search.")
+            st.error("Failed to get background. Try another description.")
 
 if 'bg_img' in st.session_state:
     st.divider()
@@ -187,24 +190,19 @@ if 'bg_img' in st.session_state:
         person_img = Image.open(uploaded_file)
         st.image(person_img, caption="Your Original Photo", width=200)
         
-        cutout_method = st.radio(
-            "How should we cut you out?",
-            ("Green Screen Math (Fast, Free)", "AI Cutout (Perfect Hair, Uses API Credit)")
-        )
+        cutout_method = st.radio("How should we cut you out?", ("Green Screen Math", "AI Cutout (Perfect Hair)"))
         
-        cutout = None
         if st.button("Cut me out"):
             with st.spinner("Removing background..."):
-                if cutout_method == "Green Screen Math (Fast, Free)":
+                if cutout_method == "Green Screen Math":
                     cutout = remove_green_screen(person_img)
-                    st.session_state['cutout'] = cutout
-                    st.success("✅ Green screen math applied!")
                 else:
                     uploaded_file.seek(0) 
                     cutout = remove_bg_ai(uploaded_file.read())
-                    if cutout:
-                        st.session_state['cutout'] = cutout
-                        st.success("✅ AI cutout complete! Look at that hair.")
+                
+                if cutout:
+                    st.session_state['cutout'] = cutout
+                    st.success("✅ Cutout complete!")
         
         if 'cutout' in st.session_state:
             st.image(st.session_state['cutout'], caption="Cutout Preview", width=200)
@@ -222,7 +220,6 @@ if 'bg_img' in st.session_state:
             if st.button("🚀 Make my scene"):
                 with st.spinner("Adding your shadow... Matching the light..."):
                     final_img = create_composite(st.session_state['cutout'], st.session_state['bg_img'], scale, x_pos, y_pos, sun_angle, sink)
-                    
                     st.image(final_img, caption="Your Scene", use_column_width=True)
                     
                     buf = io.BytesIO()
