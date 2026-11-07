@@ -37,7 +37,7 @@ st.markdown("""
 # --- THE AI DIRECTOR (GROQ) ---
 def direct_prompt(user_idea):
     if GROQ_API_KEY == "YOUR_GROQ_API_KEY":
-        return user_idea # Fallback if no key
+        return user_idea 
         
     try:
         client = Groq(api_key=GROQ_API_KEY)
@@ -59,8 +59,8 @@ def direct_prompt(user_idea):
         
         chat_completion = client.chat.completions.create(
             messages=[{"role": "user", "content": prompt}],
-            model=model="llama-3.1-8b-instant",       
- temperature=0.7,
+            model="llama-3.1-8b-instant",
+            temperature=0.7,
         )
         return chat_completion.choices[0].message.content.strip()
     except Exception as e:
@@ -206,11 +206,9 @@ if st.button("Get Background"):
         if bg_method == "Search Stock Photos":
             bg_img = download_background(location)
         else:
-            # THE DIRECTOR IS CALLED HERE
             st.info("🎬 Director is designing the shot...")
             cinematic_prompt = direct_prompt(location)
             
-            # Show the user what the Director did (Optional, but cool)
             with st.expander("See Director's Prompt"):
                 st.write(cinematic_prompt)
                 
@@ -223,7 +221,6 @@ if st.button("Get Background"):
             st.error("Failed to get background. Try another description.")
 
 if 'bg_img' in st.session_state:
-    # ... [Rest of the UI remains the same: Upload, Cutout, Blend] ...
     st.divider()
     st.subheader("Step 2: Add yourself")
     uploaded_file = st.file_uploader("Upload a photo", type=["jpg", "jpeg", "png"])
