@@ -1,3 +1,5 @@
 streamlit
 pillow
 numpy
+requests
+groq
