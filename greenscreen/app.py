@@ -59,7 +59,7 @@ def direct_prompt(user_idea):
         
         chat_completion = client.chat.completions.create(
             messages=[{"role": "user", "content": prompt}],
-            model="llama-3.1-8b-instant",
+            model="openai/gpt-oss-20b",
             temperature=0.7,
         )
         return chat_completion.choices[0].message.content.strip()
