@@ -199,7 +199,8 @@ st.divider()
 st.subheader("Step 1: Create your background")
 bg_method = st.radio("How do you want your background?", ("Search Stock Photos", "Generate with AI (CGI)"))
 
-location = st.text_input("Describe your scene", "a futuristic sci-fi space station")
+# THE TEXT AREA FIX IS HERE
+location = st.text_area("Describe your scene", "a futuristic sci-fi space station", height=100)
 
 if st.button("Get Background"):
     with st.spinner("Creating your world..."):
