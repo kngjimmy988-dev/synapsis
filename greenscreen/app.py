@@ -54,7 +54,7 @@ def direct_prompt(user_idea):
         
         User's idea: "{user_idea}"
         
-        Return ONLY the detailed prompt text. Do not say "Here is your prompt".
+        Return ONLY the detailed prompt text.
         """
         
         chat_completion = client.chat.completions.create(
@@ -68,13 +68,6 @@ def direct_prompt(user_idea):
         return user_idea
 
 # --- HELPER FUNCTIONS ---
-
-def has_green_screen(img):
-    img = img.convert("RGB")
-    data = np.array(img)
-    r, g, b = data[:, :, 0].astype(int), data[:, :, 1].astype(int), data[:, :, 2].astype(int)
-    green_mask = (g > r + 40) & (g > b + 40)
-    return (np.sum(green_mask) / (img.width * img.height)) > 0.05
 
 def remove_green_screen(img):
     img = img.convert("RGBA")
@@ -91,7 +84,7 @@ def remove_green_screen(img):
 
 def remove_bg_ai(image_bytes):
     if REMOVEBG_API_KEY == "YOUR_REMOVEBG_API_KEY" or not REMOVEBG_API_KEY:
-        st.error("Please add your Remove.bg API key to Streamlit Secrets first!")
+        st.error("Please add your Remove.bg API key to Streamlit Secrets!")
         return None
     try:
         response = requests.post(
@@ -130,7 +123,10 @@ def generate_ai_background(prompt):
         url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1080&height=1080&nologo=true"
         req = urllib.request.Request(url, headers={'User-Agent': 'VFXApp/1.0'})
         with urllib.request.urlopen(req) as img_response:
-            return Image.open(io.BytesIO(img_response.read())).convert("RGB")
+            img = Image.open(io.BytesIO(img_response.read())).convert("RGB")
+            # WATERMARK KILLER: Crop off the bottom 40 pixels
+            img = img.crop((0, 0, img.width, img.height - 40))
+            return img
     except Exception as e:
         st.error(f"Generation Error: {e}")
         return None
@@ -199,7 +195,6 @@ st.divider()
 st.subheader("Step 1: Create your background")
 bg_method = st.radio("How do you want your background?", ("Search Stock Photos", "Generate with AI (CGI)"))
 
-# THE TEXT AREA FIX IS HERE
 location = st.text_area("Describe your scene", "a futuristic sci-fi space station", height=100)
 
 if st.button("Get Background"):
@@ -228,40 +223,39 @@ if 'bg_img' in st.session_state:
     
     if uploaded_file is not None:
         person_img = Image.open(uploaded_file)
-        st.image(person_img, caption="Your Original Photo", width=200)
         
         cutout_method = st.radio("How should we cut you out?", ("Green Screen Math", "AI Cutout (Perfect Hair)"))
         
-        if st.button("Cut me out"):
-            with st.spinner("Removing background..."):
+        st.divider()
+        st.subheader("Step 3: Make it blend")
+        
+        c1, c2, c3 = st.columns(3)
+        scale = c1.slider("Size", 0.10, 0.50, 0.25, 0.01)
+        x_pos = c2.slider("Left / Right", 0.0, 1.0, 0.50, 0.01)
+        y_pos = c3.slider("Up / Down", 0.0, 1.0, 0.85, 0.01)
+        
+        sink = st.slider("Sink into Ground / Water", 0, 150, 0, 5)
+        sun_angle = st.slider("Drag to move the shadow", -90, 90, -15, 5)
+        
+        # THE ONE-BUTTON MAGIC
+        if st.button("🚀 Make my scene"):
+            with st.spinner("Cutting you out and blending..."):
+                # 1. Cut out the person automatically
                 if cutout_method == "Green Screen Math":
                     cutout = remove_green_screen(person_img)
                 else:
                     uploaded_file.seek(0) 
                     cutout = remove_bg_ai(uploaded_file.read())
                 
+                # 2. If cutout succeeded, composite it
                 if cutout:
                     st.session_state['cutout'] = cutout
-                    st.success("✅ Cutout complete!")
-        
-        if 'cutout' in st.session_state:
-            st.image(st.session_state['cutout'], caption="Cutout Preview", width=200)
-            st.divider()
-            st.subheader("Step 3: Make it blend")
-            
-            c1, c2, c3 = st.columns(3)
-            scale = c1.slider("Size", 0.10, 0.50, 0.25, 0.01)
-            x_pos = c2.slider("Left / Right", 0.0, 1.0, 0.50, 0.01)
-            y_pos = c3.slider("Up / Down", 0.0, 1.0, 0.85, 0.01)
-            
-            sink = st.slider("Sink into Ground / Water", 0, 150, 0, 5)
-            sun_angle = st.slider("Drag to move the shadow", -90, 90, -15, 5)
-            
-            if st.button("🚀 Make my scene"):
-                with st.spinner("Adding your shadow... Matching the light..."):
-                    final_img = create_composite(st.session_state['cutout'], st.session_state['bg_img'], scale, x_pos, y_pos, sun_angle, sink)
+                    final_img = create_composite(cutout, st.session_state['bg_img'], scale, x_pos, y_pos, sun_angle, sink)
+                    
                     st.image(final_img, caption="Your Scene", use_column_width=True)
                     
                     buf = io.BytesIO()
                     final_img.save(buf, format="JPEG")
                     st.download_button("Save to my Phone", buf.getvalue(), "my_scene.jpg", "image/jpeg")
+                else:
+                    st.error("Failed to cut out the person. Check your API key or try a green screen photo.")
